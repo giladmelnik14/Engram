@@ -27,6 +27,7 @@ export class Constellation {
     this.hover = null;
     this.onHover = () => {};
     this.pointer = { x: -9999, y: -9999 };
+    this.highlightIds = null; // when set, only these nodes stay bright (filter/search)
 
     this._resize = this._resize.bind(this);
     this._move = this._move.bind(this);
@@ -121,6 +122,8 @@ export class Constellation {
       strength: m.strength ?? 1,
       recall: m.recall_count ?? 0,
       status: m.status || "active",
+      author: m.author_agent || "",
+      createdDate: m.created_date || "",
       // Recall bumps strength server-side; reflect that as a brief flare.
       _targetRecall: m.recall_count ?? 0,
     };
@@ -161,6 +164,12 @@ export class Constellation {
       born: this.t,
       grow: 0, // 0 -> 1 draw-on animation
     };
+  }
+
+  // React sets which nodes to spotlight (a category filter or a search match).
+  // null clears the filter.
+  setHighlight(ids) {
+    this.highlightIds = ids && ids.size ? ids : null;
   }
 
   // Wipe all nodes and edges — used to restart the replay from an empty sky.
@@ -346,9 +355,17 @@ export class Constellation {
         if (e.to === this.hover.id) focus.add(e.from);
       }
     }
-    const nodeDim = (id) => (focus && !focus.has(id) ? 0.14 : 1);
-    const edgeDim = (e) =>
-      focus ? (e.from === this.hover.id || e.to === this.hover.id ? 1 : 0.07) : 1;
+    const hl = this.highlightIds;
+    const nodeDim = (id) => {
+      if (focus) return focus.has(id) ? 1 : 0.14;
+      if (hl) return hl.has(id) ? 1 : 0.1;
+      return 1;
+    };
+    const edgeDim = (e) => {
+      if (focus) return e.from === this.hover.id || e.to === this.hover.id ? 1 : 0.07;
+      if (hl) return hl.has(e.from) && hl.has(e.to) ? 1 : 0.05;
+      return 1;
+    };
 
     // Edges first, under the nodes.
     for (const e of this.edges.values()) {

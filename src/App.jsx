@@ -23,9 +23,9 @@ const STORY = [
   },
   {
     eyebrow: "What you're looking at",
-    title: "A codebase's memory, alive",
-    body: "Every glowing node is one thing an AI coding agent learned while building this app — a decision, a gotcha, a convention. The threads are how they relate. This is the real memory of building Engram itself, on Base44.",
-    ms: 9500,
+    title: "A living memory",
+    body: "Every glowing dot is one thing the AI learned while building this app — a decision it made, a mistake it learned to avoid, a rule it now follows. The lines connect the ideas that belong together. You don't need to read them all — just watch the memory take shape.",
+    ms: 10000,
   },
   {
     eyebrow: "What it does",
@@ -61,6 +61,8 @@ export default function App() {
   const [showStory, setShowStory] = useState(true);
   const [storyStep, setStoryStep] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
+  const [activeKind, setActiveKind] = useState(null);
+  const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
 
   const repo = repos.find((r) => r.id === repoId) || null;
@@ -299,7 +301,42 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [tip]);
 
+  // Filter the constellation by category (legend click) and/or search text —
+  // so anyone, technical or not, can isolate and explore.
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (!eng) return;
+    const term = search.trim().toLowerCase();
+    if (!activeKind && !term) {
+      eng.setHighlight(null);
+      return;
+    }
+    const ids = new Set();
+    for (const m of store.current.memories.values()) {
+      const kindOk = !activeKind || m.kind === activeKind;
+      const termOk =
+        !term ||
+        [m.summary, m.content, (m.tags || []).join(" ")].join(" ").toLowerCase().includes(term);
+      if (kindOk && termOk) ids.add(m.id);
+    }
+    eng.setHighlight(ids);
+  }, [activeKind, search, counts]);
+
   const tipColor = tip ? rgb(KIND_COLORS[tip.kind] || KIND_COLORS.fact) : "#fff";
+
+  // "2 days ago" style relative time for the tooltip.
+  const timeAgo = (iso) => {
+    if (!iso) return "";
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s < 90) return "just now";
+    const m = s / 60;
+    if (m < 60) return `${Math.round(m)} min ago`;
+    const h = m / 60;
+    if (h < 24) return `${Math.round(h)}h ago`;
+    const d = h / 24;
+    if (d < 30) return `${Math.round(d)} day${Math.round(d) === 1 ? "" : "s"} ago`;
+    return `${Math.round(d / 30)} mo ago`;
+  };
 
   // Advance the guided explainer step by step, then get out of the way.
   useEffect(() => {
@@ -379,7 +416,24 @@ export default function App() {
 
       <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
 
-      {showHint && <div className="hint">✦ hover any node to read it</div>}
+      {ready && (
+        <div className="search">
+          <span className="search-icon">⌕</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="search the memory…"
+            spellCheck={false}
+          />
+          {search && (
+            <button className="search-x" onClick={() => setSearch("")} aria-label="clear">
+              ×
+            </button>
+          )}
+        </div>
+      )}
+
+      {showHint && <div className="hint">✦ hover any node · click a colour or search to filter</div>}
 
       {!ready && <div className="loading">gathering the constellation…</div>}
 
@@ -443,10 +497,15 @@ export default function App() {
 
       <div className="hud legend">
         {LEGEND.map(([k, label]) => (
-          <div className="legend-row" key={k}>
+          <button
+            key={k}
+            className={`legend-row${activeKind === k ? " on" : ""}${activeKind && activeKind !== k ? " off" : ""}`}
+            onClick={() => setActiveKind(activeKind === k ? null : k)}
+            title={`Show only ${label.toLowerCase()} memories`}
+          >
             <span>{label}</span>
             <span className="legend-dot" style={{ background: rgb(KIND_COLORS[k]), boxShadow: `0 0 8px 1px ${rgb(KIND_COLORS[k])}` }} />
-          </div>
+          </button>
         ))}
       </div>
 
@@ -472,6 +531,12 @@ export default function App() {
                   {t}
                 </span>
               ))}
+            </div>
+          )}
+          {tip.author && (
+            <div className="tip-meta">
+              learned by <b>{tip.author}</b>
+              {tip.createdDate ? ` · ${timeAgo(tip.createdDate)}` : ""}
             </div>
           )}
         </div>
