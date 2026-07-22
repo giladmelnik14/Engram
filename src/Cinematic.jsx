@@ -4,17 +4,17 @@ import { useState, useEffect } from "react";
 // Engram exists, told with drama and pacing, then it hands off to the live
 // constellation. Silent, captioned, cinematic.
 const SCENES = [
-  { size: "sm", lines: ["3 A.M.", "Your AI ships a beautiful fix."], ms: 3200 },
-  { size: "sm", lines: ["A fresh session, days later.", "It breaks the exact same thing."], ms: 3600 },
-  { size: "xl", lines: ["It remembers nothing."], ms: 2900 },
-  { size: "lg", lines: ["Every decision.", "Every hard-won lesson.", "Gone by the next prompt."], ms: 4000 },
-  { size: "lg", lines: ["It undoes your architecture.", "Reintroduces the bugs you already fixed."], ms: 3800 },
-  { size: "xl", lines: ["The more it builds,", "the more it forgets."], ms: 3400 },
-  { size: "xl", accentLast: true, lines: ["What if it remembered", "everything?"], ms: 3600 },
-  { size: "title", title: "ENGRAM", sub: "A living memory for the AI that builds your app.", ms: 4200 },
-  { size: "lg", lines: ["Recall before it writes.", "Check before it breaks something.", "Remember what it learns."], ms: 4400 },
-  { size: "lg", lines: ["Built entirely on Base44.", "In a week.", "This is what its backend makes possible."], ms: 4400 },
-  { size: "lg", accentLast: true, lines: ["Base44 gave agents a memory.", "Let's take it all the way —", "together."], ms: 4600 },
+  { size: "sm", lines: ["3 A.M.", "Your AI ships a beautiful fix."], ms: 4100 },
+  { size: "sm", lines: ["A fresh session, days later.", "It breaks the exact same thing."], ms: 4700 },
+  { size: "xl", lines: ["It remembers nothing."], ms: 3800 },
+  { size: "lg", lines: ["Every decision.", "Every hard-won lesson.", "Gone by the next prompt."], ms: 5400 },
+  { size: "lg", lines: ["It undoes your architecture.", "Reintroduces the bugs you already fixed."], ms: 4900 },
+  { size: "xl", lines: ["The more it builds,", "the more it forgets."], ms: 4400 },
+  { size: "xl", accentLast: true, lines: ["What if it remembered", "everything?"], ms: 4700 },
+  { size: "title", title: "ENGRAM", sub: "A living memory for the AI that builds your app.", ms: 5600 },
+  { size: "lg", lines: ["Recall before it writes.", "Check before it breaks something.", "Remember what it learns."], ms: 5800 },
+  { size: "lg", lines: ["Built entirely on Base44.", "In a week.", "This is what its backend makes possible."], ms: 5800 },
+  { size: "lg", accentLast: true, lines: ["Base44 gave agents a memory.", "Let's take it all the way —", "together."], ms: 6200 },
 ];
 
 export default function Cinematic({ onDone }) {
