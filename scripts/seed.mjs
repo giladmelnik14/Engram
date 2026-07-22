@@ -60,6 +60,8 @@ for (const [i, content] of items.entries()) {
   } catch (e) {
     console.log(`   !! ${e?.response?.data?.error ?? e.message}`);
   }
+  // Space out the InvokeLLM calls so the curator doesn't hit a rate limit.
+  await new Promise((r) => setTimeout(r, 2500));
 }
 
 process.exit(0);
