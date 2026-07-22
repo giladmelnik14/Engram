@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Constellation, KIND_COLORS } from "@/constellation";
+import Cinematic from "@/Cinematic";
 
 const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 
@@ -60,7 +61,8 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [ready, setReady] = useState(false);
   const [replaying, setReplaying] = useState(false);
-  const [showStory, setShowStory] = useState(true);
+  const [showCinematic, setShowCinematic] = useState(true);
+  const [showStory, setShowStory] = useState(false);
   const [storyStep, setStoryStep] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
   const [showStart, setShowStart] = useState(false);
@@ -276,9 +278,8 @@ export default function App() {
       repoIdRef.current = id;
       filterToRepo(id);
       setReady(true);
-      // Build the constellation from empty while the guided explainer plays over it.
-      startedRef.current = true;
-      runReplay();
+      // The cinematic intro plays first; it kicks off the constellation build
+      // when it finishes (see the Cinematic onDone below).
     })();
 
     return () => {
@@ -371,9 +372,18 @@ export default function App() {
     return () => clearTimeout(t);
   }, [showStory, storyStep, ready]);
 
+  const beginAfterFilm = () => {
+    setShowCinematic(false);
+    if (startedRef.current) return;
+    startedRef.current = true;
+    runReplay();
+  };
+
   return (
     <>
       <canvas id="stage" ref={canvasRef} />
+
+      {showCinematic && ready && <Cinematic onDone={beginAfterFilm} />}
 
       {showStory && ready && (
         <div className="story">
