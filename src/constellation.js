@@ -138,6 +138,7 @@ export class Constellation {
       ...this._nodeProps(m),
       born: this.t,
       bloom: born ? 1 : 0, // 1 = full bloom flash, decays to 0
+      ringT: born ? 0 : 1, // 0→1 expanding ripple when a memory lands
       flare: 0, // recall pulse
       lastRecall: m.recall_count ?? 0,
     };
@@ -172,7 +173,9 @@ export class Constellation {
   // Called by React when the realtime stream reports a brand-new memory.
   bloomIn(m) {
     if (this.nodes.has(m.id)) {
-      this.nodes.get(m.id).bloom = 1;
+      const n = this.nodes.get(m.id);
+      n.bloom = 1;
+      n.ringT = 0;
       return;
     }
     this.nodes.set(m.id, this._makeNode(m, true));
@@ -253,6 +256,7 @@ export class Constellation {
       // animation decays
       n.bloom *= 0.94;
       n.flare *= 0.9;
+      if (n.ringT < 1) n.ringT = Math.min(1, n.ringT + 0.026);
       if (n._targetRecall > n.lastRecall) {
         n.flare = 1;
         n.lastRecall = n._targetRecall;
@@ -379,6 +383,16 @@ export class Constellation {
       ctx.beginPath();
       ctx.arc(n.x, n.y, r * (1 + n.bloom * 0.6), 0, Math.PI * 2);
       ctx.stroke();
+
+      // Landing ripple — an expanding ring the moment a memory is captured.
+      if (n.ringT < 1) {
+        const rr = r + n.ringT * 52;
+        ctx.strokeStyle = rgb(c, (1 - n.ringT) * 0.55);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, rr, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
