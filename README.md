@@ -87,9 +87,9 @@ npm install && npm run build && npx base44 site deploy
 
 To wire the MCP server into Claude Code or Cursor, see [`examples/mcp.json`](examples/mcp.json).
 
-## Why this belongs in Base44
+## Built on Base44 — a natural next chapter
 
-Base44 already believes in agent memory — it ships it for the runtime. Engram is the other half of the same idea: memory for the build loop. It's the reliability layer that makes "bring your own agent" trustworthy (agents stop regressing the app), and the accumulated decisions are a first-party dataset about how apps actually get built and fixed on Base44. Runtime memory and build memory aren't rivals — they're two halves, and only one of them existed until now.
+Base44 already believes in agent memory — it ships it for the runtime. Engram explores how far that idea can go: memory for the *build* loop, built end to end on Base44's backend in a week. It's the reliability layer that makes "bring your own agent" trustworthy (agents stop regressing the app), and the accumulated decisions are a first-party dataset about how apps actually get built and fixed on Base44. Runtime memory and build memory are two halves of the same idea — and we'd love to help take it all the way, with the Base44 team.
 
 ---
 

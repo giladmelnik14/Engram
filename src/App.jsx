@@ -44,8 +44,8 @@ const STORY = [
   },
   {
     eyebrow: "For the Base44 team",
-    title: "The half that was missing",
-    body: "Base44 already gives the chat assistants inside apps a memory. The AI that builds apps has none. Engram fills that exact gap — making every AI-built app more reliable, turning ‘bring your own agent’ into a moat, and giving Base One a first-party record of how apps actually get built. This is a feature Base44 should own.",
+    title: "Built on Base44 — imagine it native",
+    body: "Base44 already gives the chat assistants inside apps a memory. We wondered how far that idea could go, and built this on your backend in a week. Imagine it as part of the platform: every AI-built app more reliable, ‘bring your own agent’ turned into a real moat, and a first-party record of how apps actually get built. We'd love to take it there — together.",
     ms: 13000,
     accent: true,
   },

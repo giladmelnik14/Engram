@@ -13,7 +13,8 @@ const SCENES = [
   { size: "xl", accentLast: true, lines: ["What if it remembered", "everything?"], ms: 3600 },
   { size: "title", title: "ENGRAM", sub: "A living memory for the AI that builds your app.", ms: 4200 },
   { size: "lg", lines: ["Recall before it writes.", "Check before it breaks something.", "Remember what it learns."], ms: 4400 },
-  { size: "lg", accentLast: true, lines: ["Base44 gave chat agents a memory.", "This is the other half —", "the one the builders never had."], ms: 4600 },
+  { size: "lg", lines: ["Built entirely on Base44.", "In a week.", "This is what its backend makes possible."], ms: 4400 },
+  { size: "lg", accentLast: true, lines: ["Base44 gave agents a memory.", "Let's take it all the way —", "together."], ms: 4600 },
 ];
 
 export default function Cinematic({ onDone }) {
