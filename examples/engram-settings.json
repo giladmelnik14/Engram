@@ -1,0 +1,15 @@
+{
+  "//": "Add this to your project's .claude/settings.json to auto-capture memories when a Claude Code session ends. Replace the path with wherever you cloned Engram. Run `engram login` once first.",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /absolute/path/to/engram/examples/engram-autocapture.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

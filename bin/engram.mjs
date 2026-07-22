@@ -4,7 +4,7 @@
 // A plain Node CLI talking straight to the Base44 backend: no browser, no
 // Base44 frontend. Shares its core (auth, repo detection, backend calls) with
 // the MCP server in ../lib/engram.mjs.
-import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall, check } from "../lib/engram.mjs";
+import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall, check, distill } from "../lib/engram.mjs";
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -126,6 +126,41 @@ async function cmdCheck(action) {
   process.exit(status === "conflict" ? 2 : 0);
 }
 
+// Auto-capture: distill durable memories from a session log (piped or passed).
+async function cmdDistill(arg) {
+  const cfg = await cfgOrExit();
+  const r = repo();
+
+  let text = arg;
+  if (!process.stdin.isTTY) {
+    text = await new Promise((res) => {
+      let d = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", (c) => (d += c));
+      process.stdin.on("end", () => res(d));
+    });
+  }
+  if (!text || !text.trim()) {
+    console.error('usage: engram distill "<session notes>"   OR   cat session.log | engram distill');
+    process.exit(1);
+  }
+
+  process.stdout.write(C.dim("  distilling durable lessons from the session…"));
+  const { extracted, created } = await distill(cfg, { text, repo: r });
+  process.stdout.write("\r\x1b[K");
+
+  if (!created.length) {
+    console.log(C.dim(`  no durable lessons found in this session`));
+    process.exit(0);
+  }
+  console.log(`${C.green("✓")} captured ${C.bold(String(created.length))} ${C.dim(`of ${extracted} extracted · ${r}`)}\n`);
+  for (const m of created) {
+    const color = KIND_COLOR[m.kind] || C.grey;
+    console.log(`${color("●")} ${C.bold(m.summary)}`);
+  }
+  process.exit(0);
+}
+
 // Live tail — realtime works with no frontend in sight.
 async function cmdWatch() {
   const cfg = await cfgOrExit();
@@ -146,6 +181,7 @@ switch (cmd) {
   case "learn": await cmdLearn(arg); break;
   case "recall": await cmdRecall(arg); break;
   case "check": await cmdCheck(arg); break;
+  case "distill": await cmdDistill(arg); break;
   case "watch": await cmdWatch(); break;
   default:
     console.log(`${C.orange("engram")} — shared memory for AI coding agents
@@ -153,6 +189,7 @@ switch (cmd) {
   ${C.bold("engram learn")} "<what you learned>"   capture a memory
   ${C.bold("engram recall")} "<topic>" [--brief]   what does this codebase know?
   ${C.bold("engram check")} "<what you'll do>"      ⚠ flag it if it breaks a known decision
+  ${C.bold("engram distill")}                       auto-capture memories from a piped session log
   ${C.bold("engram watch")}                        live tail of the constellation
   ${C.bold("engram login")}                        issue a device key
 `);
