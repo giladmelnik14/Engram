@@ -14,7 +14,7 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { loadConfig, detectRepo, capture, recall } from "../lib/engram.mjs";
+import { loadConfig, detectRepo, capture, recall, check } from "../lib/engram.mjs";
 
 // The client may set ENGRAM_REPO; otherwise we infer it from the git remote of
 // the directory the MCP client launched us in.
@@ -70,6 +70,21 @@ const TOOLS = [
       required: ["content"],
     },
   },
+  {
+    name: "check",
+    description:
+      "Before you make a non-trivial change, describe what you are ABOUT to do and this checks it against everything the codebase has already decided. Returns status 'conflict' if it would violate or undo a settled decision (STOP and reconsider), 'caution' if it touches a known gotcha, or 'clear'. Use this to avoid regressing the app or re-litigating settled conventions.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          description: "What you are about to do, in plain language, e.g. 'call the Stripe API directly from the checkout component'",
+        },
+      },
+      required: ["action"],
+    },
+  },
 ];
 
 const server = new Server(
@@ -120,6 +135,21 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         parts.push(`Retired ${data.superseded.length} outdated memory(ies) it replaced.`);
       }
       return { content: [{ type: "text", text: parts.join(" ") }] };
+    }
+
+    if (name === "check") {
+      const data = await check(cfg, { action: args.action, repo: REPO });
+      if (data.status === "clear") {
+        return { content: [{ type: "text", text: `✓ CLEAR — nothing in ${REPO} conflicts with that.` }] };
+      }
+      const head = data.status === "conflict" ? "⚠ CONFLICT" : "⚠ CAUTION";
+      const body = (data.findings || [])
+        .map((f) => `- [${f.severity}] ${f.summary}\n  why: ${f.reason}${f.guidance ? `\n  instead: ${f.guidance}` : ""}`)
+        .join("\n");
+      const lead = data.status === "conflict"
+        ? "This would violate a decision this codebase already made. Stop and reconsider:"
+        : "This touches something the codebase already knows about:";
+      return { content: [{ type: "text", text: `${head} — ${lead}\n${body}` }] };
     }
 
     return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };

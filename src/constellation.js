@@ -314,6 +314,20 @@ export class Constellation {
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
 
+    // When a node is hovered, spotlight it and its direct neighbours; everything
+    // else recedes so the relationships become legible.
+    let focus = null;
+    if (this.hover && this.nodes.has(this.hover.id)) {
+      focus = new Set([this.hover.id]);
+      for (const e of this.edges.values()) {
+        if (e.from === this.hover.id) focus.add(e.to);
+        if (e.to === this.hover.id) focus.add(e.from);
+      }
+    }
+    const nodeDim = (id) => (focus && !focus.has(id) ? 0.14 : 1);
+    const edgeDim = (e) =>
+      focus ? (e.from === this.hover.id || e.to === this.hover.id ? 1 : 0.07) : 1;
+
     // Edges first, under the nodes.
     for (const e of this.edges.values()) {
       const a = this.nodes.get(e.from);
@@ -323,19 +337,20 @@ export class Constellation {
       const contradiction = e.relation === "contradicts";
       const supersede = e.relation === "supersedes";
       const col = contradiction ? [255, 80, 96] : supersede ? [255, 158, 61] : [120, 150, 220];
+      const ef = edgeDim(e);
 
       const ex = a.x + (b.x - a.x) * e.grow;
       const ey = a.y + (b.y - a.y) * e.grow;
 
       const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-      const base = 0.1 + e.weight * 0.28;
-      const pulse = contradiction ? 0.25 + 0.25 * Math.sin(this.t * 0.09) : 0;
+      const base = (0.1 + e.weight * 0.28) * ef;
+      const pulse = contradiction ? (0.25 + 0.25 * Math.sin(this.t * 0.09)) * ef : 0;
       grad.addColorStop(0, rgb(col, base + pulse));
       grad.addColorStop(0.5, rgb(col, base * 0.5 + pulse));
       grad.addColorStop(1, rgb(col, base + pulse));
 
       ctx.strokeStyle = grad;
-      ctx.lineWidth = 0.6 + e.weight * 1.8;
+      ctx.lineWidth = (0.6 + e.weight * 1.8) * (ef < 1 ? 0.7 : 1);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(ex, ey);
@@ -346,7 +361,7 @@ export class Constellation {
         const p = (this.t * 0.012 + e.born) % 1;
         const px = a.x + (b.x - a.x) * p;
         const py = a.y + (b.y - a.y) * p;
-        ctx.fillStyle = rgb(col, 0.5);
+        ctx.fillStyle = rgb(col, 0.5 * ef);
         ctx.beginPath();
         ctx.arc(px, py, 1.6 + e.weight, 0, Math.PI * 2);
         ctx.fill();
@@ -359,7 +374,7 @@ export class Constellation {
       const active = n.status === "active";
       const r = this.radius(n);
       const glowR = r * (3.4 + n.bloom * 4 + n.flare * 2);
-      const alpha = active ? 1 : 0.4;
+      const alpha = (active ? 1 : 0.4) * nodeDim(n.id);
 
       // Outer glow.
       const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
@@ -429,7 +444,8 @@ export class Constellation {
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 7;
-      ctx.fillStyle = `rgba(232,236,246,${isHover ? 0.98 : active ? 0.62 : 0.26})`;
+      const la = (isHover ? 0.98 : active ? 0.62 : 0.26) * nodeDim(n.id);
+      ctx.fillStyle = `rgba(232,236,246,${la})`;
       ctx.fillText(label, cx, cy);
       ctx.restore();
     }

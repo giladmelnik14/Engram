@@ -14,7 +14,7 @@ Ready-to-paste answers for the submission form at backendcompetition.base44.app/
 
 **Live URL:** https://engram-596b9d3d.base44.app
 
-**GitHub repo:** (public repo URL — see checklist below)
+**GitHub repo:** https://github.com/giladmelnik14/Engram  (public ✓)
 
 **Demo video URL:** (2–3 min — see script below)
 
@@ -67,12 +67,12 @@ None of these slowed the result down — they're the kind of edges you only find
 
 ---
 
-## GitHub repo checklist (required, must be public)
+## GitHub repo checklist — DONE ✓
 
-- [ ] `git init` and commit the project
-- [ ] Create a **public** GitHub repo under your account
-- [ ] Ensure secrets are NOT committed — `~/.engram/config.json` lives outside the repo; `.gitignore` covers `node_modules`, `dist`, logs
-- [ ] Push, and paste the URL into the form
+- [x] Committed the project (5 commits)
+- [x] Created a **public** GitHub repo: https://github.com/giladmelnik14/Engram
+- [x] No secrets committed (verified — no node_modules, .env, or credentials)
+- [x] Pushed via GitHub Desktop
 
 ## Demo video script (2–3 min)
 

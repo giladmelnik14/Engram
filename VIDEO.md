@@ -14,6 +14,7 @@ Everything below is staged and tested. Follow the shots; the commands are copy-p
 
 ```bash
 engram recall "payments"
+engram check "I'll call the Stripe payments API directly from the checkout component to save a hop"
 engram learn "Refunds must go through the same /api/payments path — never call the provider directly, or retries double-charge."
 ```
 
@@ -38,6 +39,9 @@ engram learn "Refunds must go through the same /api/payments path — never call
 **Action:** click the **acme/checkout** chip in the top bar — the canvas switches to a normal app's constellation. Arrange terminal + browser side by side if you can.
 **Action (terminal):** run `engram recall "payments"`.
 **VO:** "Before an agent writes code, it asks what this codebase already knows." *(the terminal prints the payment rules)*
+**Action (terminal):** run `engram check "I'll call the Stripe payments API directly from the checkout component…"`.
+**VO:** "And before it makes a change, it checks itself." *(the terminal prints* **⚠ CONFLICT** *— routes all payments through /api/payments — with what to do instead)*
+**VO:** "That's the regression, caught before it ships — the whole point."
 **Action (terminal):** run the `engram learn "Refunds must go through…"` command.
 **VO:** "And when it learns something new, it remembers it."
 **Action:** cut/look to the **canvas** — the new node **blooms in with a ripple**, a thread stretches to the payments memory, the counter ticks up.

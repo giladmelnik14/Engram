@@ -4,7 +4,7 @@
 // A plain Node CLI talking straight to the Base44 backend: no browser, no
 // Base44 frontend. Shares its core (auth, repo detection, backend calls) with
 // the MCP server in ../lib/engram.mjs.
-import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall } from "../lib/engram.mjs";
+import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall, check } from "../lib/engram.mjs";
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -99,6 +99,33 @@ async function cmdRecall(query) {
   process.exit(0);
 }
 
+async function cmdCheck(action) {
+  if (!action) {
+    console.error('usage: engram check "<what you are about to do>"');
+    process.exit(1);
+  }
+  const cfg = await cfgOrExit();
+  const r = repo();
+  process.stdout.write(C.dim("  checking against what this codebase knows…"));
+  const { status, findings } = await check(cfg, { action, repo: r });
+  process.stdout.write("\r\x1b[K");
+
+  if (status === "clear") {
+    console.log(`${C.green("✓ clear")} ${C.dim("— nothing this conflicts with in " + r)}`);
+    process.exit(0);
+  }
+  const head = status === "conflict" ? C.red("⚠ CONFLICT") : C.orange("⚠ caution");
+  console.log(`${head} ${C.dim("— " + r)}\n`);
+  for (const f of findings) {
+    const color = f.severity === "conflict" ? C.red : C.orange;
+    console.log(`${color("●")} ${C.bold(f.summary)}`);
+    console.log(`  ${C.dim(f.reason)}`);
+    if (f.guidance) console.log(`  ${C.green("→ " + f.guidance)}`);
+    console.log("");
+  }
+  process.exit(status === "conflict" ? 2 : 0);
+}
+
 // Live tail — realtime works with no frontend in sight.
 async function cmdWatch() {
   const cfg = await cfgOrExit();
@@ -118,12 +145,14 @@ switch (cmd) {
   case "login": await cmdLogin(); break;
   case "learn": await cmdLearn(arg); break;
   case "recall": await cmdRecall(arg); break;
+  case "check": await cmdCheck(arg); break;
   case "watch": await cmdWatch(); break;
   default:
     console.log(`${C.orange("engram")} — shared memory for AI coding agents
 
   ${C.bold("engram learn")} "<what you learned>"   capture a memory
   ${C.bold("engram recall")} "<topic>" [--brief]   what does this codebase know?
+  ${C.bold("engram check")} "<what you'll do>"      ⚠ flag it if it breaks a known decision
   ${C.bold("engram watch")}                        live tail of the constellation
   ${C.bold("engram login")}                        issue a device key
 `);

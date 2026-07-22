@@ -20,6 +20,7 @@ Engram is a shared, living memory for a codebase's AI agents.
 
 - **`recall`** — before an agent writes code, it asks what the codebase already knows about the topic. Returns the durable decisions, gotchas, conventions, and architecture notes that would cause a mistake if ignored.
 - **`learn` / `remember`** — after an agent learns something durable, it captures it. A server-side **curator agent** classifies it, tags it, and discovers how it relates to existing memories — including when a new decision *supersedes* or *contradicts* an old one.
+- **`check`** — the guardrail. An agent describes what it's *about* to do, and Engram checks it against every settled decision, returning **conflict / caution / clear**. It's the difference between memory that *remembers* and memory that *stops the regression before it ships* — e.g. "call Stripe directly from the component" → ⚠ conflict with the "route all payments through /api/payments" decision, with guidance on what to do instead.
 - **The constellation** — every memory is a glowing node; every relationship a thread of light. It streams live: capture a memory in your terminal and it blooms onto the canvas in under a second. Unused memories fade over time; recalled ones grow brighter, so the map always reflects what the team actually relies on.
 
 ## One backend, three clients
