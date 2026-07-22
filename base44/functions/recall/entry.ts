@@ -53,8 +53,14 @@ Deno.serve(async (req) => {
 
     // Recall reinforces the memories it returns, so it is a write in disguise
     // and needs the same gate as capture.
+    // A valid caller gets the full experience: recall reinforces the memories
+    // it returns (a write in disguise) and can spend a credit to synthesize.
+    // With no key we don't 401 — we fall back to a read-only *trial*: real
+    // results from the live constellation, but no reinforcement write and no
+    // paid synthesis. That's what lets anyone try recall in one line, with no
+    // account and at zero cost to us, before they deploy their own.
     const caller = await resolveCaller(base44, body);
-    if (!caller) return bad("Sign in, or present a valid device key", 401);
+    const trial = !caller;
 
     const admin = base44.asServiceRole;
     const repo = await resolveRepo(admin, body.repo);
@@ -74,23 +80,28 @@ Deno.serve(async (req) => {
       .slice(0, limit);
 
     if (!ranked.length) {
-      return Response.json({ success: true, repo: repo.name, memories: [], briefing: null });
+      return Response.json({ success: true, trial, repo: repo.name, memories: [], briefing: null });
     }
 
-    const now = new Date().toISOString();
-    await admin.entities.Memory.bulkUpdate(
-      ranked.map((r: any) => ({
-        id: r.memory.id,
-        // Reinforcement with diminishing returns, so a hot memory cannot
-        // run away and drown out the rest of the constellation.
-        strength: Math.min(12, (r.memory.strength ?? 1) + 0.4),
-        recall_count: (r.memory.recall_count ?? 0) + 1,
-        last_recalled_at: now,
-      })),
-    );
+    // Reinforcement and synthesis are the two things a trial can't do: one is a
+    // write, the other spends a credit. A trial still gets the real ranked
+    // results — it just reads without leaving a trace.
+    if (!trial) {
+      const now = new Date().toISOString();
+      await admin.entities.Memory.bulkUpdate(
+        ranked.map((r: any) => ({
+          id: r.memory.id,
+          // Reinforcement with diminishing returns, so a hot memory cannot
+          // run away and drown out the rest of the constellation.
+          strength: Math.min(12, (r.memory.strength ?? 1) + 0.4),
+          recall_count: (r.memory.recall_count ?? 0) + 1,
+          last_recalled_at: now,
+        })),
+      );
+    }
 
     let briefing: string | null = null;
-    if (body.synthesize) {
+    if (body.synthesize && !trial) {
       briefing = (await base44.integrations.Core.InvokeLLM({
         prompt: `An AI coding agent is about to work on "${body.query}" in the ${repo.name} codebase.
 
@@ -103,6 +114,7 @@ Write a tight briefing for the agent. Lead with anything that would cause a mist
 
     return Response.json({
       success: true,
+      trial,
       repo: repo.name,
       briefing,
       memories: ranked.map((r: any) => ({

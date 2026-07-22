@@ -65,14 +65,22 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
-    const caller = await resolveCaller(base44, body);
-    if (!caller) return bad("Sign in, or present a valid device key", 401);
-
     const action = String(body.action ?? body.query ?? "").trim();
     if (!action) return bad("action is required");
 
     const admin = base44.asServiceRole;
     const repo = await resolveRepo(admin, body.repo);
+
+    // check spends a credit (one InvokeLLM call), so it's gated. The one
+    // exception is the public "demo" repo: anyone can run the guardrail there,
+    // with no account, to feel it stop a real mistake before deploying their
+    // own. Bounding the trial to "demo" keeps that open door from becoming an
+    // open-ended cost on arbitrary repos.
+    const caller = await resolveCaller(base44, body);
+    if (!caller && repo.name !== "demo") {
+      return bad("Sign in, or present a valid device key", 401);
+    }
+    const trial = !caller;
 
     const pool = await admin.entities.Memory.filter(
       { repo_id: repo.id, status: "active" },
@@ -80,7 +88,7 @@ Deno.serve(async (req) => {
       400,
     );
     if (!pool.length) {
-      return Response.json({ status: "clear", findings: [], repo: repo.name, note: "No memories yet for this codebase." });
+      return Response.json({ status: "clear", trial, findings: [], repo: repo.name, note: "No memories yet for this codebase." });
     }
 
     const terms = tokenize(action);
@@ -132,7 +140,7 @@ For every conflict or caution, cite the memory id, say why it clashes, and give 
     if (findings.some((f: any) => f.severity === "conflict")) status = "conflict";
     else if (findings.length) status = "caution";
 
-    return Response.json({ status, findings, repo: repo.name });
+    return Response.json({ status, trial, findings, repo: repo.name });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
   }

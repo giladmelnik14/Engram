@@ -750,6 +750,31 @@ body,
   transition: background 0.15s ease, color 0.15s ease;
 }
 .start-gh:hover { background: rgba(255, 140, 59, 0.24); color: #fff; }
+.start-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(56, 232, 178, 0.14);
+  border: 1px solid rgba(56, 232, 178, 0.45);
+  color: #8ff0d2;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  vertical-align: middle;
+}
+.start-out {
+  margin: 10px 0 4px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  background: rgba(255, 88, 118, 0.08);
+  border: 1px solid rgba(255, 88, 118, 0.32);
+  font-size: 13.5px !important;
+  line-height: 1.55;
+}
+.start-conflict { color: #ff8ea1; font-weight: 700; }
+.start-fix { color: #9ff0d4; }
 .about-x {
   position: absolute;
   top: 16px;

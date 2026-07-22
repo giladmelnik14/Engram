@@ -472,32 +472,47 @@ export default function App() {
         <div className="about-scrim" onClick={() => setShowStart(false)}>
           <div className="about" onClick={(e) => e.stopPropagation()}>
             <button className="about-x" onClick={() => setShowStart(false)}>×</button>
-            <h2>Use this in your own project</h2>
+            <h2>Use it yourself</h2>
             <p>
-              Engram is open. Here's how to give your <b>own</b> AI coding assistant a shared
-              memory — in a few minutes, all on Base44.
+              Don't take our word for it — <b>feel it work</b> right now, against a live
+              sample codebase. No account, three commands.
             </p>
-            <h3>1 · Get the backend</h3>
-            <p>It's a single Base44 project. Clone the repo, or start fresh:</p>
+            <h3>1 · Try it in 30 seconds <span className="start-badge">no account</span></h3>
+            <p>Clone it, then ask the live demo what it already knows:</p>
             <div className="start-code">
-              <code>git clone github.com/giladmelnik14/Engram</code>
-              <code>npx base44 create   <span>← or start a new one</span></code>
+              <code>git clone https://github.com/giladmelnik14/Engram</code>
+              <code>cd Engram &amp;&amp; npm install</code>
+              <code>node bin/engram.mjs recall "payments" <span>--demo</span></code>
             </div>
-            <h3>2 · Connect your AI</h3>
-            <p>Point Claude Code or Cursor at the included MCP server, or use the command line:</p>
-            <div className="start-code">
-              <code>engram recall "payments"</code>
-              <code>engram check "call Stripe from the frontend"</code>
-            </div>
-            <h3>3 · Your AI shares a brain</h3>
             <p>
-              It <b>recalls</b> before it writes, <b>checks</b> before it changes anything, and{" "}
-              <b>remembers</b> what it learns — so it stops repeating old mistakes.
+              It answers with the sample app's real decisions — route money through{" "}
+              <b>/api/payments</b>, store amounts in cents, verify Stripe webhooks. Now watch
+              it <b>stop a mistake before it ships</b>:
+            </p>
+            <div className="start-code">
+              <code>node bin/engram.mjs check "call Stripe from the checkout component" <span>--demo</span></code>
+            </div>
+            <p className="start-out">
+              <b className="start-conflict">⚠ CONFLICT</b> — "Route every payment through /api/payments."{" "}
+              <span className="start-fix">→ Call the server endpoint from the component instead.</span>
+            </p>
+            <h3>2 · Make it your agent's memory</h3>
+            <p>
+              Point it at your <b>own</b> codebase: deploy your Base44 backend, then connect
+              Claude Code or Cursor to the built-in MCP server.
+            </p>
+            <div className="start-code">
+              <code>npx base44 create engram --template backend-only</code>
+              <code>npx base44 entities push &amp;&amp; functions deploy &amp;&amp; agents push</code>
+            </div>
+            <p>
+              Now your AI <b>recalls</b> before it writes, <b>checks</b> before it changes
+              anything, and <b>remembers</b> what it learns — so it stops repeating old mistakes.
             </p>
             <a className="start-gh" href="https://github.com/giladmelnik14/Engram" target="_blank" rel="noreferrer">
               View the full code on GitHub →
             </a>
-            <p className="about-foot">Built entirely on Base44 — one command to deploy your own.</p>
+            <p className="about-foot">Built entirely on Base44 — one backend, three clients.</p>
           </div>
         </div>
       )}

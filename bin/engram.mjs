@@ -25,7 +25,19 @@ const KIND_COLOR = {
   fact: C.green,
 };
 
-const repo = () => process.env.ENGRAM_REPO || detectRepo();
+// `--demo` points any command at the live public "demo" constellation, so a
+// first-time visitor can feel recall + check in one line without their own
+// backend. Otherwise we bind to the repo of the current directory.
+const DEMO = process.argv.includes("--demo");
+const repo = () => (DEMO ? "demo" : process.env.ENGRAM_REPO || detectRepo());
+
+// Reads (recall/check) work with no setup at all: if there's no stored config
+// we mint an ephemeral device key on the spot. Unrecognised keys get read-only
+// trial results from the backend, so `engram recall --demo` just works after a
+// clone — no `login` step. Writes still go through cfgOrExit.
+async function cfgOrTrial() {
+  return (await loadConfig().catch(() => null)) || (await ensureConfig()).cfg;
+}
 
 async function cfgOrExit() {
   try {
@@ -73,9 +85,9 @@ async function cmdLearn(text) {
 }
 
 async function cmdRecall(query) {
-  const cfg = await cfgOrExit();
+  const cfg = await cfgOrTrial();
   const r = repo();
-  const { memories, briefing } = await recall(cfg, {
+  const { memories, briefing, trial } = await recall(cfg, {
     query,
     repo: r,
     limit: 8,
@@ -96,6 +108,7 @@ async function cmdRecall(query) {
     console.log(C.orange("─── briefing ───"));
     console.log(briefing + "\n");
   }
+  if (trial) console.log(C.dim("  trial · read-only. deploy your own to capture, reinforce, and synthesize.\n"));
   process.exit(0);
 }
 
@@ -104,10 +117,10 @@ async function cmdCheck(action) {
     console.error('usage: engram check "<what you are about to do>"');
     process.exit(1);
   }
-  const cfg = await cfgOrExit();
+  const cfg = await cfgOrTrial();
   const r = repo();
   process.stdout.write(C.dim("  checking against what this codebase knows…"));
-  const { status, findings } = await check(cfg, { action, repo: r });
+  const { status, findings, trial } = await check(cfg, { action, repo: r });
   process.stdout.write("\r\x1b[K");
 
   if (status === "clear") {
@@ -123,6 +136,7 @@ async function cmdCheck(action) {
     if (f.guidance) console.log(`  ${C.green("→ " + f.guidance)}`);
     console.log("");
   }
+  if (trial) console.log(C.dim("  trial · deploy your own to run check against your codebase.\n"));
   process.exit(status === "conflict" ? 2 : 0);
 }
 
@@ -192,6 +206,10 @@ switch (cmd) {
   ${C.bold("engram distill")}                       auto-capture memories from a piped session log
   ${C.bold("engram watch")}                        live tail of the constellation
   ${C.bold("engram login")}                        issue a device key
+
+  ${C.dim("Try it now, no setup — against the live demo constellation:")}
+  ${C.bold("engram recall")} "payments" ${C.dim("--demo")}
+  ${C.bold("engram check")} "call Stripe from the checkout component" ${C.dim("--demo")}
 `);
     process.exit(0);
 }
