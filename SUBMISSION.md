@@ -61,7 +61,7 @@ Genuinely a pleasure to build on — the backend-first template plus the AI-agen
 2. **`entities push` is a full sync that can delete the built-in User.** Running it without a local `user.jsonc` silently removed the User entity (and with it, everything auth depends on). A guard or confirmation before deleting a built-in would prevent a nasty surprise.
 3. **Realtime `subscribe()` fires on `create()` but not `bulkCreate()`.** New rows written in bulk don't emit realtime events, so a live UI misses them without a manual re-fetch. Consistent behavior across single and bulk writes would be ideal.
 4. **`base44 exec` requires a local Deno install** with no obvious heads-up; falling back to the Node SDK worked, but a clearer prerequisite note would help.
-5. **Integration-credit limits are easy to hit while iterating.** Clearer in-CLI signaling of remaining credits (and what consumes them) would help developers pace an agent-heavy build.
+5. **Integration-credit limits are easy to hit while iterating, and the failure is abrupt.** The free tier's 100 integration credits went fast during an agent-heavy build (each curation is one `InvokeLLM` call), and hitting the ceiling returns a hard "upgrade your plan" error mid-run with no warning. Two things would smooth this a lot: (a) surfacing remaining credits in the CLI / SDK response so a build can pace itself, and (b) a soft-warning as the balance runs low rather than a cliff. For agent workloads that call integrations in a loop, predictability here matters.
 
 None of these slowed the result down — they're the kind of edges you only find by building something real, and I'm happy to go deeper on any of them.
 

@@ -86,6 +86,13 @@ body,
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(6px);
 }
+.switch-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0 2px 0 3px;
+}
 .repo-chip {
   border: 1px solid transparent;
   border-radius: 999px;
@@ -150,7 +157,7 @@ body,
 
 /* ---- legend ---- */
 .legend {
-  bottom: 24px;
+  bottom: 78px; /* clears the "Made with Base44" hosting badge in the corner */
   right: 26px;
   display: flex;
   flex-direction: column;
@@ -298,6 +305,25 @@ body,
   letter-spacing: 0.02em;
 }
 
+.hint {
+  position: fixed;
+  z-index: 15;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(12, 14, 22, 0.7);
+  backdrop-filter: blur(8px);
+  color: var(--muted);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  animation: fadeIn 0.5s ease;
+  pointer-events: none;
+}
+.hint::first-letter { color: var(--orange); }
+
 /* ---- intro card ---- */
 .intro {
   position: fixed;
@@ -427,6 +453,48 @@ body,
 .about-x:hover { color: var(--ink); background: rgba(255, 255, 255, 0.1); }
 
 @media (max-width: 640px) {
-  .intro-title { font-size: 28px; }
-  .intro-sub { font-size: 14.5px; }
+  .intro { padding: 20px; }
+  .intro-title { font-size: 26px; }
+  .intro-sub { font-size: 14px; }
+
+  /* Top bar: brand on row 1 (subtitle dropped), switcher wraps to row 2 and
+     scrolls; "how it works" tucks into the top-right corner. */
+  .hud-top { padding: 12px 14px; flex-wrap: wrap; gap: 10px; padding-right: 108px; }
+  .brand-name { font-size: 16px; }
+  .brand-name span { display: none; }
+
+  .how {
+    top: 14px;
+    right: 14px;
+    left: auto;
+    transform: none;
+    font-size: 12px;
+    padding: 6px 11px;
+    z-index: 20;
+  }
+
+  .repo-switch {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+  .repo-switch::-webkit-scrollbar { display: none; }
+  .switch-label,
+  .built-on { display: none; }
+
+  .stats { bottom: 16px; left: 16px; gap: 18px; }
+  .stat-num { font-size: 22px; }
+  .stat-lbl { font-size: 10px; }
+
+  .legend { bottom: 72px; right: 16px; gap: 5px; }
+  .legend-row { font-size: 10.5px; gap: 6px; }
+
+  .replay { bottom: 74px; font-size: 12px; padding: 8px 15px; }
+  .toast-wrap { top: 66px; width: 92%; }
+  .toast { font-size: 12px; padding: 9px 14px; }
+
+  .about { padding: 26px 22px; }
 }

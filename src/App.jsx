@@ -24,6 +24,7 @@ export default function App() {
   const [replaying, setReplaying] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   const repo = repos.find((r) => r.id === repoId) || null;
 
@@ -34,6 +35,7 @@ export default function App() {
   const repoIdRef = useRef(null); // current selection, readable inside async loops
   const skipRef = useRef(false);
   const startedRef = useRef(false); // replay begins once, after the intro
+  const hintShownRef = useRef(false); // the "hover to explore" hint shows once
 
   const pushToast = (t) => {
     const id = `${t.kind}-${t.summary}-${performance.now()}`;
@@ -112,6 +114,13 @@ export default function App() {
       sync();
     });
     unsubsRef.current = [unsubMem, unsubLink];
+
+    // Once the first constellation has settled, nudge the visitor to explore.
+    if (!hintShownRef.current) {
+      hintShownRef.current = true;
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 7000);
+    }
   };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -168,12 +177,13 @@ export default function App() {
 
       if (kills.length) {
         pushToast({ event: "retired", kind: byId[kills[0].to_memory_id]?.kind, summary: byId[kills[0].to_memory_id]?.summary });
-        await sleep(700);
+        await sleep(1000);
         pushToast({ event: "learned", kind: m.kind, summary: m.summary });
       } else {
         pushToast({ event: "learned", kind: m.kind, summary: m.summary });
       }
-      await sleep(skipRef.current ? 0 : 1050);
+      // Paced so each memory is actually readable before the next blooms.
+      await sleep(skipRef.current ? 0 : 2100);
     }
 
     setReplaying(false);
@@ -296,10 +306,14 @@ export default function App() {
             <h2>What you're looking at</h2>
             <p>
               A living map of everything an AI coding agent has learned while building this
-              codebase. Each <b>node</b> is one durable memory — a decision, a gotcha, a
-              convention. Each <b>thread</b> is a relationship the curator agent found between
-              them. Brighter nodes are the ones agents actually rely on.
+              codebase. <b>Hover any node to read the full memory.</b>
             </p>
+            <h3>How to read it</h3>
+            <ul>
+              <li><b>Each node</b> is one durable memory — a decision, gotcha, convention, or architecture note. Its <b>colour</b> is the kind (see the legend).</li>
+              <li><b>Size &amp; brightness</b> show how established it is: every time an agent recalls a memory it grows; memories no one uses decay and fade.</li>
+              <li><b>Each thread</b> is a relationship the curator found — one memory refines, depends on, or <b>supersedes</b> another. Conflicts render in <span style={{ color: "#ff5c72" }}>red</span> for a human to resolve.</li>
+            </ul>
             <h3>Why it matters</h3>
             <p>
               AI coding agents forget everything between sessions — so they undo decisions and
@@ -309,7 +323,7 @@ export default function App() {
             </p>
             <h3>One Base44 backend, three ways in</h3>
             <ul>
-              <li><b>This canvas</b> — the live constellation, streaming over Base44 realtime.</li>
+              <li><b>This canvas</b> — live: capture a memory anywhere and it blooms here in under a second, over Base44 realtime.</li>
               <li><b>A CLI</b> — <code>engram learn</code> / <code>engram recall</code> from your terminal.</li>
               <li><b>An MCP server</b> — so Claude Code and Cursor plug into the same memory.</li>
             </ul>
@@ -323,6 +337,8 @@ export default function App() {
 
       <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
 
+      {showHint && <div className="hint">✦ hover any node to read it</div>}
+
       {!ready && <div className="loading">gathering the constellation…</div>}
 
       <div className="hud hud-top">
@@ -334,12 +350,13 @@ export default function App() {
         </div>
         <div className="repo-switch">
           <div className="live" />
+          <span className="switch-label">codebase</span>
           {repos.map((r) => (
             <button
               key={r.id}
               className={`repo-chip${r.id === repoId ? " on" : ""}`}
               onClick={() => selectRepo(r.id)}
-              title={r.description || r.name}
+              title={`Switch to the ${r.name} constellation`}
             >
               {r.name}
             </button>
