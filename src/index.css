@@ -83,8 +83,8 @@ body,
   padding: 6px 10px 6px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(6px);
+  background: rgba(12, 14, 22, 0.62);
+  backdrop-filter: blur(8px);
 }
 .switch-label {
   font-size: 11px;
@@ -336,19 +336,20 @@ body,
   padding: 9px 18px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(12, 14, 22, 0.72);
+  background: rgba(12, 14, 22, 0.62);
   backdrop-filter: blur(8px);
   color: var(--muted);
   font-size: 13px;
   font-family: inherit;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 .replay:hover {
   color: var(--ink);
   border-color: rgba(255, 140, 59, 0.5);
   background: rgba(255, 140, 59, 0.08);
+  transform: translateX(-50%) translateY(-1px);
 }
 
 .loading {

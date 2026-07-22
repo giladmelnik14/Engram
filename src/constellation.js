@@ -5,12 +5,12 @@
 // Kept framework-free on purpose — the animation loop must not fight React's.
 
 export const KIND_COLORS = {
-  decision: [91, 140, 255],
-  gotcha: [255, 92, 114],
-  convention: [255, 158, 61],
-  architecture: [167, 139, 250],
-  preference: [139, 148, 168],
-  fact: [69, 224, 176],
+  decision: [64, 156, 255], // clear cyan-blue — distinct from architecture's violet
+  gotcha: [255, 88, 118], // vivid coral
+  convention: [255, 172, 64], // warm amber
+  architecture: [176, 140, 255], // clear violet
+  preference: [150, 162, 184],
+  fact: [56, 232, 178], // bright teal
 };
 
 const rgb = (c, a = 1) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
@@ -296,6 +296,9 @@ export class Constellation {
       n.bloom *= 0.965;
       n.flare *= 0.92;
       if (n.ringT < 1) n.ringT = Math.min(1, n.ringT + 0.016);
+      // smooth hover-grow
+      const hoverTarget = this.hover?.id === n.id ? 1 : 0;
+      n.hoverT = (n.hoverT ?? 0) + (hoverTarget - (n.hoverT ?? 0)) * 0.18;
       if (n._targetRecall > n.lastRecall) {
         n.flare = 1;
         n.lastRecall = n._targetRecall;
@@ -452,7 +455,8 @@ export class Constellation {
     for (const n of this.nodes.values()) {
       const c = KIND_COLORS[n.kind] || KIND_COLORS.fact;
       const active = n.status === "active";
-      const r = this.radius(n);
+      // Smooth hover-grow makes the node feel responsive to the cursor.
+      const r = this.radius(n) * (1 + (n.hoverT || 0) * 0.42);
       // Guided-story emphasis: a gentle continuous pulse on the relevant memories.
       const emph =
         this.emphasisIds && this.emphasisIds.has(n.id)
@@ -460,7 +464,10 @@ export class Constellation {
           : 0;
       const eff = n.flare + emph;
       const glowR = r * (3.9 + n.bloom * 5 + eff * 2.6);
-      const alpha = (active ? 1 : 0.4) * Math.max(nodeDim(n.id), emph > 0 ? 1 : 0);
+      // Ease the dim so filtering/search fades in and out instead of snapping.
+      const targetDim = Math.max(nodeDim(n.id), emph > 0 ? 1 : 0);
+      n._dimEase = (n._dimEase ?? targetDim) + (targetDim - (n._dimEase ?? targetDim)) * 0.16;
+      const alpha = (active ? 1 : 0.4) * n._dimEase;
 
       // Outer glow — layered for a richer, deeper falloff.
       const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
