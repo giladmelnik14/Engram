@@ -31,13 +31,15 @@ const STORY = [
     eyebrow: "What it does",
     title: "Recall · Check · Remember",
     body: "Before it writes, an agent recalls what the codebase already knows. Before it changes something, it checks for conflicts — and gets stopped if it would undo a past decision. After it learns, it remembers. It can even capture memories from a whole session on its own.",
-    ms: 11000,
+    ms: 12000,
+    emphasis: "recall",
   },
   {
     eyebrow: "How you use it",
     title: "One backend, any agent",
     body: "Plug Engram into Claude Code or Cursor as an MCP server, or drive it from the terminal. It's one Base44 project — entities, auth, functions, an AI agent, realtime and hosting — so your agents share one brain in seconds.",
-    ms: 9500,
+    ms: 10500,
+    emphasis: "mcp",
   },
   {
     eyebrow: "For the Base44 team",
@@ -221,8 +223,8 @@ export default function App() {
       } else {
         pushToast({ event: "learned", kind: m.kind, summary: m.summary });
       }
-      // Paced so each memory is actually readable before the next blooms.
-      await sleep(skipRef.current ? 0 : 2100);
+      // Paced so each memory is comfortably readable before the next blooms.
+      await sleep(skipRef.current ? 0 : 2900);
     }
 
     setReplaying(false);
@@ -321,6 +323,25 @@ export default function App() {
     }
     eng.setHighlight(ids);
   }, [activeKind, search, counts]);
+
+  // Guided highlight: while the story narrates a point, pulse the memories that
+  // illustrate it, tying the words to the visual.
+  useEffect(() => {
+    const eng = engineRef.current;
+    if (!eng) return;
+    const kw = showStory ? STORY[storyStep]?.emphasis : null;
+    if (!kw) {
+      eng.setEmphasis(null);
+      return;
+    }
+    const ids = new Set();
+    for (const m of store.current.memories.values()) {
+      if ([m.summary, m.content, (m.tags || []).join(" ")].join(" ").toLowerCase().includes(kw)) {
+        ids.add(m.id);
+      }
+    }
+    eng.setEmphasis(ids);
+  }, [showStory, storyStep, counts]);
 
   const tipColor = tip ? rgb(KIND_COLORS[tip.kind] || KIND_COLORS.fact) : "#fff";
 

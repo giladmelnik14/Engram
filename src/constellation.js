@@ -28,6 +28,7 @@ export class Constellation {
     this.onHover = () => {};
     this.pointer = { x: -9999, y: -9999 };
     this.highlightIds = null; // when set, only these nodes stay bright (filter/search)
+    this.emphasisIds = null; // gently pulsed nodes (guided-story spotlight)
 
     this._resize = this._resize.bind(this);
     this._move = this._move.bind(this);
@@ -172,6 +173,11 @@ export class Constellation {
     this.highlightIds = ids && ids.size ? ids : null;
   }
 
+  // The guided story pulses the memories relevant to the current step.
+  setEmphasis(ids) {
+    this.emphasisIds = ids && ids.size ? ids : null;
+  }
+
   // Wipe all nodes and edges — used to restart the replay from an empty sky.
   clear() {
     this.nodes.clear();
@@ -279,15 +285,17 @@ export class Constellation {
       n.fx += (this.cx - n.x) * 0.004;
       n.fy += (this.cy - n.y) * 0.004;
 
-      n.vx = (n.vx + n.fx) * 0.84;
-      n.vy = (n.vy + n.fy) * 0.84;
-      n.x += n.vx * 0.16;
-      n.y += n.vy * 0.16;
+      // Slightly higher damping → the constellation settles calmer and drifts
+      // less, so it's easy to read.
+      n.vx = (n.vx + n.fx) * 0.81;
+      n.vy = (n.vy + n.fy) * 0.81;
+      n.x += n.vx * 0.15;
+      n.y += n.vy * 0.15;
 
-      // animation decays
-      n.bloom *= 0.94;
-      n.flare *= 0.9;
-      if (n.ringT < 1) n.ringT = Math.min(1, n.ringT + 0.026);
+      // animation decays — bloom lingers longer so each landing is a moment
+      n.bloom *= 0.965;
+      n.flare *= 0.92;
+      if (n.ringT < 1) n.ringT = Math.min(1, n.ringT + 0.016);
       if (n._targetRecall > n.lastRecall) {
         n.flare = 1;
         n.lastRecall = n._targetRecall;
@@ -340,6 +348,39 @@ export class Constellation {
       ctx.beginPath();
       ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Named regions — the dominant topics, floating faintly behind everything,
+    // so the constellation reads as a labelled map, not a blob.
+    if (this.nodes.size >= 5) {
+      const counts = {};
+      const cen = {};
+      let total = 0;
+      for (const n of this.nodes.values()) {
+        if (n.status !== "active") continue;
+        total += 1;
+        for (const t of n.tags || []) {
+          counts[t] = (counts[t] || 0) + 1;
+          const c = (cen[t] ||= { x: 0, y: 0 });
+          c.x += n.x;
+          c.y += n.y;
+        }
+      }
+      const tags = Object.keys(counts)
+        .filter((t) => counts[t] >= 2 && counts[t] <= total * 0.55)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, 4);
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 22px Inter, system-ui, sans-serif";
+      if ("letterSpacing" in ctx) ctx.letterSpacing = "4px";
+      const dimFactor = this.highlightIds ? 0.5 : 1;
+      for (const t of tags) {
+        ctx.fillStyle = `rgba(150,165,205,${0.085 * dimFactor})`;
+        ctx.fillText(t.toUpperCase(), cen[t].x / counts[t], cen[t].y / counts[t]);
+      }
+      ctx.restore();
     }
 
     ctx.save();
@@ -412,13 +453,20 @@ export class Constellation {
       const c = KIND_COLORS[n.kind] || KIND_COLORS.fact;
       const active = n.status === "active";
       const r = this.radius(n);
-      const glowR = r * (3.4 + n.bloom * 4 + n.flare * 2);
-      const alpha = (active ? 1 : 0.4) * nodeDim(n.id);
+      // Guided-story emphasis: a gentle continuous pulse on the relevant memories.
+      const emph =
+        this.emphasisIds && this.emphasisIds.has(n.id)
+          ? 0.55 + 0.45 * Math.sin(this.t * 0.09)
+          : 0;
+      const eff = n.flare + emph;
+      const glowR = r * (3.9 + n.bloom * 5 + eff * 2.6);
+      const alpha = (active ? 1 : 0.4) * Math.max(nodeDim(n.id), emph > 0 ? 1 : 0);
 
-      // Outer glow.
+      // Outer glow — layered for a richer, deeper falloff.
       const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
-      g.addColorStop(0, rgb(c, (0.5 + n.bloom * 0.5) * alpha));
-      g.addColorStop(0.35, rgb(c, 0.22 * alpha));
+      g.addColorStop(0, rgb(c, (0.55 + n.bloom * 0.45 + eff * 0.35) * alpha));
+      g.addColorStop(0.18, rgb(c, 0.42 * alpha));
+      g.addColorStop(0.45, rgb(c, 0.15 * alpha));
       g.addColorStop(1, rgb(c, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -426,9 +474,9 @@ export class Constellation {
       ctx.fill();
 
       // Core.
-      ctx.fillStyle = rgb(active ? [255, 255, 255] : c, (0.9 + n.flare * 0.1) * alpha);
+      ctx.fillStyle = rgb(active ? [255, 255, 255] : c, (0.9 + eff * 0.1) * alpha);
       ctx.beginPath();
-      ctx.arc(n.x, n.y, r * (1 + n.bloom * 0.6), 0, Math.PI * 2);
+      ctx.arc(n.x, n.y, r * (1 + n.bloom * 0.6 + emph * 0.28), 0, Math.PI * 2);
       ctx.fill();
 
       // Coloured rim.
@@ -438,18 +486,35 @@ export class Constellation {
       ctx.arc(n.x, n.y, r * (1 + n.bloom * 0.6), 0, Math.PI * 2);
       ctx.stroke();
 
-      // Landing ripple — an expanding ring the moment a memory is captured.
+      // Landing ripple — twin expanding rings the moment a memory is captured.
       if (n.ringT < 1) {
-        const rr = r + n.ringT * 52;
-        ctx.strokeStyle = rgb(c, (1 - n.ringT) * 0.55);
-        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = rgb(c, (1 - n.ringT) * 0.6);
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, rr, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, r + n.ringT * 74, 0, Math.PI * 2);
         ctx.stroke();
+        const t2 = n.ringT - 0.28;
+        if (t2 > 0) {
+          ctx.strokeStyle = rgb(c, (1 - t2) * 0.32);
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r + t2 * 96, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
     }
 
     ctx.restore();
+
+    // Vignette — pulls the eye to the centre and gives the scene cinematic depth.
+    const vig = ctx.createRadialGradient(
+      this.cx, this.cy, Math.min(this.w, this.h) * 0.32,
+      this.cx, this.cy, Math.max(this.w, this.h) * 0.72,
+    );
+    vig.addColorStop(0, "rgba(5,6,10,0)");
+    vig.addColorStop(1, "rgba(3,4,8,0.6)");
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, this.w, this.h);
 
     // Labels — always on, so a still frame reads as knowledge, not decoration.
     // Collision-aware: when two would overlap, the stronger memory keeps its
