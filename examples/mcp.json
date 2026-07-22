@@ -1,0 +1,12 @@
+{
+  "//": "Drop this into your project as .mcp.json (Claude Code) or the equivalent MCP settings block in Cursor / Windsurf / Zed. Run `engram login` once first so the device key exists. Replace the path with wherever you cloned Engram.",
+  "mcpServers": {
+    "engram": {
+      "command": "node",
+      "args": ["/absolute/path/to/engram/bin/engram-mcp.mjs"],
+      "env": {
+        "ENGRAM_REPO": "acme/checkout"
+      }
+    }
+  }
+}

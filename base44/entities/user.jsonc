@@ -1,0 +1,25 @@
+// User — Base44's built-in user entity, extended with Engram-specific fields.
+// This file must exist: `entities push` is a full sync, and omitting it deletes User.
+{
+  "name": "User",
+  "description": "A developer whose agents contribute to the constellation.",
+  "type": "object",
+  "properties": {
+    "handle": {
+      "type": "string",
+      "description": "Short display name shown on the canvas, e.g. gilad"
+    },
+    "accent": {
+      "type": "string",
+      "description": "Hex colour used for this developer's contribution trails"
+    },
+    "default_repo_id": {
+      "type": "string",
+      "description": "Repo the CLI writes to when none is specified"
+    },
+    "preferred_agent": {
+      "type": "string",
+      "description": "Which coding agent they use, e.g. claude-code"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+// Repo — a codebase whose lore we are accumulating. One constellation per repo.
+{
+  "name": "Repo",
+  "description": "A codebase that agents are building shared memory about.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name, e.g. acme/checkout"
+    },
+    "remote_url": {
+      "type": "string",
+      "description": "Git remote, used to auto-match a local checkout to its constellation"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this codebase is"
+    },
+    "accent": {
+      "type": "string",
+      "description": "Hex accent colour for this repo's constellation"
+    },
+    "memory_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Denormalised count, kept fresh by the curator function"
+    }
+  },
+  "required": ["name"],
+  "rls": {
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": true,
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

@@ -1,0 +1,93 @@
+// Memory — a single thing an AI coding agent learned.
+// This is the atom of Engram, and one row here is one glowing node on the canvas.
+{
+  "name": "Memory",
+  "description": "A durable lesson captured from an AI coding agent session.",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "string",
+      "description": "The full lesson, in the agent's own words"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line distillation, written by the curator agent"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["decision", "gotcha", "convention", "architecture", "preference", "fact"],
+      "enumNames": ["Decision", "Gotcha", "Convention", "Architecture", "Preference", "Fact"],
+      "default": "fact",
+      "description": "Drives node colour on the canvas"
+    },
+    "repo_id": {
+      "type": "string",
+      "description": "Repo this memory belongs to"
+    },
+    "scope": {
+      "type": "string",
+      "description": "File path or subsystem the memory applies to, e.g. src/auth"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Curator-assigned topic tags, used for clustering"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["cli", "mcp", "github", "manual"],
+      "default": "cli",
+      "description": "Which client wrote this memory"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Agent session that produced this memory"
+    },
+    "author_agent": {
+      "type": "string",
+      "description": "Which agent learned it, e.g. claude-code, cursor"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5,
+      "description": "How sure the curator is that this is durable knowledge"
+    },
+    "strength": {
+      "type": "number",
+      "minimum": 0,
+      "default": 1,
+      "description": "Reinforced on every recall, decayed nightly. Drives node size and glow"
+    },
+    "recall_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "How many times an agent has read this back"
+    },
+    "last_recalled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time an agent recalled this memory"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "superseded", "archived"],
+      "default": "active",
+      "description": "Superseded memories fade out on the canvas instead of vanishing"
+    },
+    "superseded_by": {
+      "type": "string",
+      "description": "Memory ID that replaced this one"
+    }
+  },
+  "required": ["content"],
+  "rls": {
+    // Public read: anyone with the link can watch the constellation live.
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": true,
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

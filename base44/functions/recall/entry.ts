@@ -1,0 +1,122 @@
+// recall — an agent asks what this codebase already knows.
+//
+// Scoring is done in plain code, not by an LLM: recall runs on every agent
+// turn, so paying integration credits per recall would be the wrong trade.
+// The optional `synthesize` flag spends one credit to write a briefing.
+//
+// The side effect is the interesting part. Recalling a memory reinforces it,
+// which bumps `strength` — and because the canvas is subscribed to Memory,
+// every recalled node visibly pulses and grows the moment an agent reads it.
+import { createClientFromRequest } from "npm:@base44/sdk";
+import { bad, resolveCaller, resolveRepo } from "../../shared/engram.ts";
+
+const STOPWORDS = new Set([
+  "the", "a", "an", "and", "or", "but", "is", "are", "was", "were", "be", "to",
+  "of", "in", "on", "for", "with", "how", "what", "why", "when", "do", "does",
+  "we", "i", "it", "this", "that", "our", "you", "should", "can",
+]);
+
+function tokenize(text: string) {
+  return String(text ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9_./-]+/)
+    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
+}
+
+function score(memory: any, terms: string[]) {
+  if (!terms.length) return memory.strength ?? 1;
+
+  const haystack = [
+    memory.summary ?? "",
+    memory.content ?? "",
+    memory.scope ?? "",
+    (memory.tags ?? []).join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  let hits = 0;
+  for (const term of terms) {
+    if ((memory.tags ?? []).some((t: string) => t.toLowerCase() === term)) hits += 3;
+    else if (haystack.includes(term)) hits += 1;
+  }
+  if (!hits) return 0;
+
+  // Relevance first, then reinforce with how well-established the memory is.
+  return hits * (1 + Math.log1p(memory.strength ?? 1)) * (0.5 + (memory.confidence ?? 0.5));
+}
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const body = await req.json().catch(() => ({}));
+
+    // Recall reinforces the memories it returns, so it is a write in disguise
+    // and needs the same gate as capture.
+    const caller = await resolveCaller(base44, body);
+    if (!caller) return bad("Sign in, or present a valid device key", 401);
+
+    const admin = base44.asServiceRole;
+    const repo = await resolveRepo(admin, body.repo);
+    const limit = Math.min(25, Math.max(1, Number(body.limit ?? 8)));
+    const terms = tokenize(body.query ?? "");
+
+    const pool = await admin.entities.Memory.filter(
+      { repo_id: repo.id, status: "active" },
+      "-strength",
+      500,
+    );
+
+    const ranked = pool
+      .map((m: any) => ({ memory: m, relevance: score(m, terms) }))
+      .filter((r: any) => r.relevance > 0)
+      .sort((a: any, b: any) => b.relevance - a.relevance)
+      .slice(0, limit);
+
+    if (!ranked.length) {
+      return Response.json({ success: true, repo: repo.name, memories: [], briefing: null });
+    }
+
+    const now = new Date().toISOString();
+    await admin.entities.Memory.bulkUpdate(
+      ranked.map((r: any) => ({
+        id: r.memory.id,
+        // Reinforcement with diminishing returns, so a hot memory cannot
+        // run away and drown out the rest of the constellation.
+        strength: Math.min(12, (r.memory.strength ?? 1) + 0.4),
+        recall_count: (r.memory.recall_count ?? 0) + 1,
+        last_recalled_at: now,
+      })),
+    );
+
+    let briefing: string | null = null;
+    if (body.synthesize) {
+      briefing = (await base44.integrations.Core.InvokeLLM({
+        prompt: `An AI coding agent is about to work on "${body.query}" in the ${repo.name} codebase.
+
+Here is what the team already knows:
+${ranked.map((r: any, i: number) => `${i + 1}. [${r.memory.kind}] ${r.memory.summary}\n   ${r.memory.content}`).join("\n")}
+
+Write a tight briefing for the agent. Lead with anything that would cause a mistake if ignored. No preamble, no restating the question.`,
+      })) as string;
+    }
+
+    return Response.json({
+      success: true,
+      repo: repo.name,
+      briefing,
+      memories: ranked.map((r: any) => ({
+        id: r.memory.id,
+        summary: r.memory.summary,
+        content: r.memory.content,
+        kind: r.memory.kind,
+        tags: r.memory.tags,
+        scope: r.memory.scope,
+        confidence: r.memory.confidence,
+        relevance: Number(r.relevance.toFixed(2)),
+      })),
+    });
+  } catch (error) {
+    return Response.json({ error: (error as Error).message }, { status: 500 });
+  }
+});

@@ -1,0 +1,53 @@
+// Session — one agent work session. Lets the canvas replay "what did we learn today".
+{
+  "name": "Session",
+  "description": "A single AI coding agent session that contributed memories.",
+  "type": "object",
+  "properties": {
+    "repo_id": {
+      "type": "string",
+      "description": "Repo worked on"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent identifier, e.g. claude-code"
+    },
+    "client": {
+      "type": "string",
+      "enum": ["cli", "mcp", "github", "manual"],
+      "default": "cli",
+      "description": "Which Engram client opened the session"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Git branch the session ran on"
+    },
+    "title": {
+      "type": "string",
+      "description": "What this session was about"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session start"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session end"
+    },
+    "memory_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Memories captured in this session"
+    }
+  },
+  "required": ["agent"],
+  "rls": {
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": true,
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

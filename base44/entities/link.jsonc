@@ -1,0 +1,46 @@
+// Link — a relationship the curator agent discovered between two memories.
+// One row here is one thread of light on the canvas.
+{
+  "name": "Link",
+  "description": "A semantic edge between two memories, discovered server-side.",
+  "type": "object",
+  "properties": {
+    "from_memory_id": {
+      "type": "string",
+      "description": "Source memory"
+    },
+    "to_memory_id": {
+      "type": "string",
+      "description": "Target memory"
+    },
+    "relation": {
+      "type": "string",
+      "enum": ["relates_to", "refines", "supersedes", "contradicts", "depends_on"],
+      "enumNames": ["Relates to", "Refines", "Supersedes", "Contradicts", "Depends on"],
+      "default": "relates_to",
+      "description": "Contradictions render red — they are the ones worth looking at"
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5,
+      "description": "Edge strength, drives thread brightness and pull in the layout"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why the curator connected these two, shown on hover"
+    },
+    "repo_id": {
+      "type": "string",
+      "description": "Repo this link belongs to"
+    }
+  },
+  "required": ["from_memory_id", "to_memory_id"],
+  "rls": {
+    "create": { "user_condition": { "id": "{{user.id}}" } },
+    "read": true,
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}

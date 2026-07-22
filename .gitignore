@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Base44-generated agent skill docs (vendored tooling, not our source)
+.agents/
+skills-lock.json
