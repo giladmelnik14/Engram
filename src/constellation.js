@@ -242,6 +242,28 @@ export class Constellation {
       b.fy -= uy * f;
     }
 
+    // Topic clustering: memories that share a tag drift toward that tag's
+    // centre of mass, so the constellation self-organises into sub-clusters
+    // (auth, payments, database…) instead of one undifferentiated blob.
+    const tagC = {};
+    for (const n of nodes) {
+      for (const t of n.tags || []) {
+        const c = (tagC[t] ||= { x: 0, y: 0, n: 0 });
+        c.x += n.x;
+        c.y += n.y;
+        c.n += 1;
+      }
+    }
+    for (const n of nodes) {
+      for (const t of n.tags || []) {
+        const c = tagC[t];
+        if (c && c.n > 1) {
+          n.fx += (c.x / c.n - n.x) * 0.006;
+          n.fy += (c.y / c.n - n.y) * 0.006;
+        }
+      }
+    }
+
     // Gentle gravity toward centre — just enough to keep the constellation
     // composed in frame, weak enough that repulsion can spread it out.
     for (const n of nodes) {
