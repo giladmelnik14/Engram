@@ -12,6 +12,42 @@ const LEGEND = [
   ["fact", "Fact"],
 ];
 
+// The guided explainer that plays on entry — what you're looking at, what it
+// does, how to use it, and a closing note written for the Base44 team.
+const STORY = [
+  {
+    eyebrow: "Built on Base44",
+    title: "The memory layer for the agents that build your app",
+    body: "Base44 gives your app's chat agents memory. Engram gives the same to the agents that build it — so the next session never forgets.",
+    ms: 7000,
+  },
+  {
+    eyebrow: "What you're looking at",
+    title: "A codebase's memory, alive",
+    body: "Every glowing node is one thing an AI coding agent learned while building this app — a decision, a gotcha, a convention. The threads are how they relate. This is the real memory of building Engram itself, on Base44.",
+    ms: 9500,
+  },
+  {
+    eyebrow: "What it does",
+    title: "Recall · Check · Remember",
+    body: "Before it writes, an agent recalls what the codebase already knows. Before it changes something, it checks for conflicts — and gets stopped if it would undo a past decision. After it learns, it remembers. It can even capture memories from a whole session on its own.",
+    ms: 11000,
+  },
+  {
+    eyebrow: "How you use it",
+    title: "One backend, any agent",
+    body: "Plug Engram into Claude Code or Cursor as an MCP server, or drive it from the terminal. It's one Base44 project — entities, auth, functions, an AI agent, realtime and hosting — so your agents share one brain in seconds.",
+    ms: 9500,
+  },
+  {
+    eyebrow: "For the Base44 team",
+    title: "The half that was missing",
+    body: "Base44 already ships memory for the chat agents inside apps. The agents that build apps have none. Engram fills that exact gap — making every agent-built app more reliable, turning ‘bring your own agent’ into a moat, and giving Base One a first-party record of how apps actually get built. This is a feature Base44 should own.",
+    ms: 13000,
+    accent: true,
+  },
+];
+
 export default function App() {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -22,7 +58,8 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [ready, setReady] = useState(false);
   const [replaying, setReplaying] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showStory, setShowStory] = useState(true);
+  const [storyStep, setStoryStep] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
@@ -234,8 +271,9 @@ export default function App() {
       repoIdRef.current = id;
       filterToRepo(id);
       setReady(true);
-      // The replay is kicked off when the intro card dismisses (see begin()),
-      // so the visitor reads the pitch first, then watches the build from empty.
+      // Build the constellation from empty while the guided explainer plays over it.
+      startedRef.current = true;
+      runReplay();
     })();
 
     return () => {
@@ -263,38 +301,42 @@ export default function App() {
 
   const tipColor = tip ? rgb(KIND_COLORS[tip.kind] || KIND_COLORS.fact) : "#fff";
 
-  // Dismiss the intro and start the replay from an empty sky — once.
-  const begin = () => {
-    setShowIntro(false);
-    if (startedRef.current) return;
-    startedRef.current = true;
-    runReplay();
-  };
-
-  // The intro card greets a first-time visitor, then gets out of the way.
+  // Advance the guided explainer step by step, then get out of the way.
   useEffect(() => {
-    if (!ready) return;
-    const t = setTimeout(begin, 6500);
+    if (!showStory || !ready) return;
+    const last = storyStep >= STORY.length - 1;
+    const t = setTimeout(() => {
+      if (last) setShowStory(false);
+      else setStoryStep((s) => s + 1);
+    }, STORY[storyStep].ms || 8000);
     return () => clearTimeout(t);
-  }, [ready]);
+  }, [showStory, storyStep, ready]);
 
   return (
     <>
       <canvas id="stage" ref={canvasRef} />
 
-      {showIntro && ready && (
-        <div className="intro" onClick={begin}>
-          <div className="intro-card">
-            <div className="intro-eyebrow">Built on Base44</div>
-            <h1 className="intro-title">
-              The memory layer for the agents<br />that build your app
-            </h1>
-            <p className="intro-sub">
-              Base44 gives your app's chat agents memory. <b>Engram gives the same to the
-              agents that build it</b> — every decision, gotcha and convention your coding
-              agent learns, captured and shared so the next session never forgets.
-            </p>
-            <div className="intro-hint">watch the constellation build itself →</div>
+      {showStory && ready && (
+        <div className="story">
+          <div className={`story-card${STORY[storyStep].accent ? " accent" : ""}`} key={storyStep}>
+            <div className="story-eyebrow">{STORY[storyStep].eyebrow}</div>
+            <h1 className="story-title">{STORY[storyStep].title}</h1>
+            <p className="story-body">{STORY[storyStep].body}</p>
+            <div className="story-nav">
+              <div className="story-dots">
+                {STORY.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`story-dot${i === storyStep ? " on" : ""}`}
+                    onClick={() => setStoryStep(i)}
+                    aria-label={`Step ${i + 1}`}
+                  />
+                ))}
+              </div>
+              <button className="story-skip" onClick={() => setShowStory(false)}>
+                {storyStep < STORY.length - 1 ? "skip →" : "explore →"}
+              </button>
+            </div>
           </div>
         </div>
       )}
