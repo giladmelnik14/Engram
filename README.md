@@ -69,14 +69,32 @@ src/             the constellation canvas (Vite + React, framework-free renderer
 - **Memory decays.** A nightly function decays unused memories toward archival; recall reinforces the useful ones. Without this, a memory layer just becomes an append-only pile of noise.
 - **The curator is honest about conflict.** `contradicts` links are surfaced, not hidden — when two memories disagree, a human should decide, and the canvas renders that edge in red.
 
-## Running it
+## Try it in 30 seconds (no account)
+
+Recall and check run in a read-only **trial** against the live public `demo`
+constellation — no login, no backend of your own, zero cost. Clone, install, ask:
+
+```bash
+git clone https://github.com/giladmelnik14/Engram
+cd Engram && npm install
+
+# what does this codebase already know about payments?
+node bin/engram.mjs recall "payments" --demo
+
+# now watch memory stop a regression before it ships
+node bin/engram.mjs check "call Stripe from the checkout component" --demo
+#  ⚠ CONFLICT — "Route every payment through /api/payments."
+#     → Call the server endpoint from the component instead.
+```
+
+## Running your own
 
 ```bash
 # 1. Scaffold + deploy the backend (one command)
 npx base44 create engram --template backend-only
 npx base44 entities push && npx base44 functions deploy && npx base44 agents push
 
-# 2. The CLI
+# 2. The CLI (against your own codebase)
 engram login                       # issues a device key
 engram learn "All money routes through /api/payments for idempotency."
 engram recall "payments"
