@@ -16,35 +16,35 @@ const LEGEND = [
 // does, how to use it, and a closing note written for the Base44 team.
 const STORY = [
   {
-    eyebrow: "Built on Base44",
-    title: "The memory layer for the agents that build your app",
-    body: "Base44 gives your app's chat agents memory. Engram gives the same to the agents that build it — so the next session never forgets.",
-    ms: 7000,
+    eyebrow: "The problem",
+    title: "Yesterday the AI fixed the bug.\nToday it broke it again.",
+    body: "AI coding assistants forget everything between sessions — so they undo decisions and reintroduce bugs you already fixed. Everyone building with AI hits this wall.",
+    ms: 8500,
   },
   {
-    eyebrow: "What you're looking at",
-    title: "A living memory",
-    body: "Every glowing dot is one thing the AI learned while building this app — a decision it made, a mistake it learned to avoid, a rule it now follows. The lines connect the ideas that belong together. You don't need to read them all — just watch the memory take shape.",
-    ms: 10000,
+    eyebrow: "The fix — what you're looking at",
+    title: "A living memory for your AI",
+    body: "Every glowing dot is one thing the AI learned while building this app — a decision it made, a mistake it learned to avoid, a rule it now follows. The lines connect ideas that belong together. You don't need to read them all — just watch the memory take shape.",
+    ms: 10500,
   },
   {
     eyebrow: "What it does",
     title: "Recall · Check · Remember",
-    body: "Before it writes, an agent recalls what the codebase already knows. Before it changes something, it checks for conflicts — and gets stopped if it would undo a past decision. After it learns, it remembers. It can even capture memories from a whole session on its own.",
+    body: "Before it writes code, the AI recalls what's already been decided. Before it changes something, it checks for conflicts — and gets stopped if it would undo a past decision. After it learns, it remembers. It can even capture lessons from a whole session on its own.",
     ms: 12000,
     emphasis: "recall",
   },
   {
     eyebrow: "How you use it",
-    title: "One backend, any agent",
-    body: "Plug Engram into Claude Code or Cursor as an MCP server, or drive it from the terminal. It's one Base44 project — entities, auth, functions, an AI agent, realtime and hosting — so your agents share one brain in seconds.",
-    ms: 10500,
+    title: "Plug in any AI, in minutes",
+    body: "Connect it to Claude Code or Cursor, or use one simple command. It's a single Base44 project — database, login, logic, realtime and hosting all included — so your AI shares one brain in seconds. (Tap “use it yourself” any time.)",
+    ms: 11000,
     emphasis: "mcp",
   },
   {
     eyebrow: "For the Base44 team",
     title: "The half that was missing",
-    body: "Base44 already ships memory for the chat agents inside apps. The agents that build apps have none. Engram fills that exact gap — making every agent-built app more reliable, turning ‘bring your own agent’ into a moat, and giving Base One a first-party record of how apps actually get built. This is a feature Base44 should own.",
+    body: "Base44 already gives the chat assistants inside apps a memory. The AI that builds apps has none. Engram fills that exact gap — making every AI-built app more reliable, turning ‘bring your own agent’ into a moat, and giving Base One a first-party record of how apps actually get built. This is a feature Base44 should own.",
     ms: 13000,
     accent: true,
   },
@@ -63,6 +63,7 @@ export default function App() {
   const [showStory, setShowStory] = useState(true);
   const [storyStep, setStoryStep] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
+  const [showStart, setShowStart] = useState(false);
   const [activeKind, setActiveKind] = useState(null);
   const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
@@ -435,15 +436,18 @@ export default function App() {
         </div>
       )}
 
-      <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
+      <div className="top-actions">
+        <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
+        <button className="how cta" onClick={() => setShowStart(true)}>✦ use it yourself</button>
+      </div>
 
       {ready && (
-        <div className="search">
+        <div className="search" title="Type a keyword to find a specific memory">
           <span className="search-icon">⌕</span>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="search the memory…"
+            placeholder="search these memories…"
             spellCheck={false}
           />
           {search && (
@@ -451,6 +455,40 @@ export default function App() {
               ×
             </button>
           )}
+        </div>
+      )}
+
+      {showStart && (
+        <div className="about-scrim" onClick={() => setShowStart(false)}>
+          <div className="about" onClick={(e) => e.stopPropagation()}>
+            <button className="about-x" onClick={() => setShowStart(false)}>×</button>
+            <h2>Use this in your own project</h2>
+            <p>
+              Engram is open. Here's how to give your <b>own</b> AI coding assistant a shared
+              memory — in a few minutes, all on Base44.
+            </p>
+            <h3>1 · Get the backend</h3>
+            <p>It's a single Base44 project. Clone the repo, or start fresh:</p>
+            <div className="start-code">
+              <code>git clone github.com/giladmelnik14/Engram</code>
+              <code>npx base44 create   <span>← or start a new one</span></code>
+            </div>
+            <h3>2 · Connect your AI</h3>
+            <p>Point Claude Code or Cursor at the included MCP server, or use the command line:</p>
+            <div className="start-code">
+              <code>engram recall "payments"</code>
+              <code>engram check "call Stripe from the frontend"</code>
+            </div>
+            <h3>3 · Your AI shares a brain</h3>
+            <p>
+              It <b>recalls</b> before it writes, <b>checks</b> before it changes anything, and{" "}
+              <b>remembers</b> what it learns — so it stops repeating old mistakes.
+            </p>
+            <a className="start-gh" href="https://github.com/giladmelnik14/Engram" target="_blank" rel="noreferrer">
+              View the full code on GitHub →
+            </a>
+            <p className="about-foot">Built entirely on Base44 — one command to deploy your own.</p>
+          </div>
         </div>
       )}
 
@@ -465,15 +503,19 @@ export default function App() {
             Engram <span>· memory for the agents that build your app</span>
           </div>
         </div>
-        <div className="repo-switch">
+        <div className="repo-switch" title="Each is a different project's memory — click to switch">
           <div className="live" />
-          <span className="switch-label">codebase</span>
+          <span className="switch-label">example&nbsp;project</span>
           {repos.map((r) => (
             <button
               key={r.id}
               className={`repo-chip${r.id === repoId ? " on" : ""}`}
               onClick={() => selectRepo(r.id)}
-              title={`Switch to the ${r.name} constellation`}
+              title={
+                r.name === "engram"
+                  ? "Engram's own memory — the very app you're looking at"
+                  : "A sample app's memory — shows it works on any project"
+              }
             >
               {r.name}
             </button>
@@ -498,12 +540,14 @@ export default function App() {
         })}
       </div>
 
-      <button
-        className="replay"
-        onClick={() => (replaying ? (skipRef.current = true) : runReplay())}
-      >
-        {replaying ? "skip ▸▸" : "▸ replay the story"}
-      </button>
+      {!showStory && (
+        <button
+          className="replay"
+          onClick={() => (replaying ? (skipRef.current = true) : runReplay())}
+        >
+          {replaying ? "skip ▸▸" : "▸ replay the story"}
+        </button>
+      )}
 
       <div className="hud stats">
         <div>

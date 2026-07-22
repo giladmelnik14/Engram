@@ -471,11 +471,12 @@ body,
   margin-bottom: 11px;
 }
 .story-title {
-  font-size: 27px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.015em;
-  line-height: 1.15;
+  line-height: 1.16;
   margin-bottom: 13px;
+  white-space: pre-line;
 }
 .story-body {
   font-size: 15px;
@@ -531,12 +532,16 @@ body,
 }
 
 /* ---- how it works ---- */
-.how {
+.top-actions {
   position: fixed;
   z-index: 15;
-  top: 22px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.how {
   padding: 7px 15px;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -546,9 +551,20 @@ body,
   font-family: inherit;
   font-size: 12.5px;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
-.how:hover { color: var(--ink); border-color: rgba(255, 140, 59, 0.4); }
+.how:hover { color: var(--ink); border-color: rgba(255, 140, 59, 0.4); transform: translateY(-1px); }
+.how.cta {
+  color: #ffd7ad;
+  border-color: rgba(255, 140, 59, 0.5);
+  background: rgba(255, 140, 59, 0.13);
+  font-weight: 600;
+}
+.how.cta:hover {
+  color: #fff;
+  border-color: rgba(255, 140, 59, 0.9);
+  background: rgba(255, 140, 59, 0.22);
+}
 
 /* ---- about panel ---- */
 .about-scrim {
@@ -592,6 +608,40 @@ body,
   color: var(--ink);
 }
 .about-foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+
+.start-code {
+  margin: 10px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.start-code code {
+  display: block;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.start-code code span { color: var(--muted); }
+.start-gh {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 140, 59, 0.14);
+  border: 1px solid rgba(255, 140, 59, 0.5);
+  color: #ffd7ad;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.start-gh:hover { background: rgba(255, 140, 59, 0.24); color: #fff; }
 .about-x {
   position: absolute;
   top: 16px;
@@ -613,21 +663,21 @@ body,
   .intro-title { font-size: 26px; }
   .intro-sub { font-size: 14px; }
 
-  /* Top bar: brand on row 1 (subtitle dropped), switcher wraps to row 2 and
-     scrolls; "how it works" tucks into the top-right corner. */
-  .hud-top { padding: 12px 14px; flex-wrap: wrap; gap: 10px; padding-right: 108px; }
+  /* Top bar: brand on row 1 (subtitle dropped), action buttons top-right,
+     switcher wraps to row 2 and scrolls. */
+  .hud-top { padding: 12px 14px; flex-wrap: wrap; gap: 10px; padding-right: 180px; }
   .brand-name { font-size: 16px; }
   .brand-name span { display: none; }
 
-  .how {
-    top: 14px;
-    right: 14px;
+  .top-actions {
+    top: 12px;
+    right: 12px;
     left: auto;
     transform: none;
-    font-size: 12px;
-    padding: 6px 11px;
+    gap: 6px;
     z-index: 20;
   }
+  .how { font-size: 11px; padding: 5px 9px; }
 
   .repo-switch {
     order: 3;
