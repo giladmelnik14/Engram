@@ -291,6 +291,7 @@ export default function App() {
     }
 
     setReplaying(false);
+    setToasts([]); // the story is over — clear the "learned" toasts for a calm canvas
     goLive();
   };
 
