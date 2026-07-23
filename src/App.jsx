@@ -180,8 +180,7 @@ export default function App() {
         ev.data.last_flagged_at !== prev?.last_flagged_at &&
         Date.now() - new Date(ev.data.last_flagged_at).getTime() < 10000
       ) {
-        engineRef.current?.flash(ev.id);
-        pushToast({ event: "conflict", kind: ev.data.kind, summary: ev.data.summary });
+        engineRef.current?.flash(ev.id); // red pulse only — no banner
       }
       sync();
     });
