@@ -45,7 +45,7 @@ const STORY = [
   {
     eyebrow: "For the Base44 team",
     title: "Built on Base44 — imagine it native",
-    body: "Base44 already gives the chat assistants inside apps a memory. We wondered how far that idea could go, and built this on your backend in a week. Imagine it as part of the platform: every AI-built app more reliable, ‘bring your own agent’ turned into a real moat, and a first-party record of how apps actually get built. We'd love to take it there — together.",
+    body: "Base44 already gives the chat assistants inside apps a memory. We wondered how far that idea could go, and built this on your backend in a few days. Imagine it as part of the platform: every AI-built app more reliable, ‘bring your own agent’ turned into a real moat, and a first-party record of how apps actually get built. We'd love to take it there — together.",
     ms: 13000,
     accent: true,
   },
@@ -497,7 +497,7 @@ export default function App() {
     revealTimerRef.current = setTimeout(() => {
       setShowClarity(false);
       runReplay();
-    }, 5000);
+    }, 8000);
   };
 
   return (

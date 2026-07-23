@@ -108,7 +108,7 @@ To wire the MCP server into Claude Code or Cursor, see [`examples/mcp.json`](exa
 
 ## Built on Base44 — a natural next chapter
 
-Base44 already believes in agent memory — it ships it for the runtime. Engram explores how far that idea can go: memory for the *build* loop, built end to end on Base44's backend in a week. It's the reliability layer that makes "bring your own agent" trustworthy (agents stop regressing the app), and the accumulated decisions are a first-party dataset about how apps actually get built and fixed on Base44. Runtime memory and build memory are two halves of the same idea — and we'd love to help take it all the way, with the Base44 team.
+Base44 already believes in agent memory — it ships it for the runtime. Engram explores how far that idea can go: memory for the *build* loop, built end to end on Base44's backend in a few days. It's the reliability layer that makes "bring your own agent" trustworthy (agents stop regressing the app), and the accumulated decisions are a first-party dataset about how apps actually get built and fixed on Base44. Runtime memory and build memory are two halves of the same idea — and we'd love to help take it all the way, with the Base44 team.
 
 ---
 

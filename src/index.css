@@ -486,7 +486,7 @@ body,
   width: min(680px, calc(100vw - 48px));
   text-align: center;
   pointer-events: none;
-  animation: clarityLife 5s ease both;
+  animation: clarityLife 8s ease both;
 }
 .clarity-lead {
   font-size: 27px;
