@@ -469,11 +469,13 @@ export default function App() {
         setTryResult({ kind: "check", ...data });
         // The console already shows the result and the dot flashes red on the
         // canvas — no top banner here (that's only for terminal-fired checks the
-        // poll picks up). Mark the flags as seen so the poll stays quiet too.
+        // poll picks up). Mark flags as seen and wipe any banner the poll may
+        // have raced in, so in-page play stays clean.
         for (const f of data.findings || []) {
           engineRef.current?.flash(f.memory_id);
           if (data.flagged_at) flashSeenRef.current.set(f.memory_id, data.flagged_at);
         }
+        setToasts((prev) => prev.filter((t) => t.event !== "conflict"));
       }
     } catch (e) {
       setTryResult({ kind: tryMode, error: e?.message || "something went wrong — try again" });
