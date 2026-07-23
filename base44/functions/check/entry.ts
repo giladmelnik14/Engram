@@ -165,18 +165,19 @@ For every conflict or caution, cite the memory id, say why it clashes, and give 
     else if (findings.length) status = "caution";
 
     // Make the guardrail visible: stamp each flagged memory so the live canvas
-    // pulses it red over realtime. Individual updates (not bulkUpdate) so the
-    // subscribe stream actually fires for each one.
+    // pulses it red. Return the timestamp so an in-page caller can flash the
+    // node immediately and still let the poll dedupe against the same value.
+    let flagged_at: string | null = null;
     if (findings.length) {
-      const now = new Date().toISOString();
+      flagged_at = new Date().toISOString();
       await Promise.all(
         findings.map((f: any) =>
-          admin.entities.Memory.update(f.memory_id, { last_flagged_at: now }).catch(() => {}),
+          admin.entities.Memory.update(f.memory_id, { last_flagged_at: flagged_at }).catch(() => {}),
         ),
       );
     }
 
-    return Response.json({ status, trial, findings, repo: repo.name });
+    return Response.json({ status, trial, findings, repo: repo.name, flagged_at });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
   }

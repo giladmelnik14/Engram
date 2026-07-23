@@ -67,6 +67,11 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showStart, setShowStart] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
+  const [tryOpen, setTryOpen] = useState(false);
+  const [tryMode, setTryMode] = useState("recall"); // "recall" | "check"
+  const [tryInput, setTryInput] = useState("");
+  const [tryResult, setTryResult] = useState(null);
+  const [tryLoading, setTryLoading] = useState(false);
   const [activeKind, setActiveKind] = useState(null);
   const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
@@ -414,6 +419,42 @@ export default function App() {
     return () => clearTimeout(t);
   }, [showStory, storyStep, ready]);
 
+  // The in-page playground. Opening it snaps the canvas to the demo repo so a
+  // check's red pulse lands on the constellation the visitor is looking at.
+  const openTry = () => {
+    const demo = repos.find((r) => r.name === "demo");
+    if (demo && demo.id !== repoIdRef.current) selectRepo(demo.id);
+    setTryResult(null);
+    setTryOpen(true);
+  };
+
+  const runTry = async (text) => {
+    const q = (text ?? tryInput).trim();
+    if (!q || tryLoading) return;
+    setTryInput(q);
+    setTryLoading(true);
+    setTryResult(null);
+    try {
+      if (tryMode === "recall") {
+        const { data } = await base44.functions.invoke("recall", { query: q, repo: "demo", limit: 6 });
+        setTryResult({ kind: "recall", ...data });
+      } else {
+        const { data } = await base44.functions.invoke("check", { action: q, repo: "demo" });
+        setTryResult({ kind: "check", ...data });
+        for (const f of data.findings || []) {
+          engineRef.current?.flash(f.memory_id);
+          if (data.flagged_at) flashSeenRef.current.set(f.memory_id, data.flagged_at); // dedupe the poll
+        }
+        if ((data.findings || []).length) {
+          pushToast({ event: "conflict", kind: data.findings[0].kind, summary: data.findings[0].summary });
+        }
+      }
+    } catch (e) {
+      setTryResult({ kind: tryMode, error: e?.message || "something went wrong — try again" });
+    }
+    setTryLoading(false);
+  };
+
   const beginAfterFilm = () => {
     setShowCinematic(false);
     if (startedRef.current) return;
@@ -570,8 +611,103 @@ export default function App() {
       <div className="top-actions">
         <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
         <button className="how" onClick={() => setShowDiff(true)}>see the difference</button>
-        <button className="how cta" onClick={() => setShowStart(true)}>✦ use it yourself</button>
+        <button className="how" onClick={() => setShowStart(true)}>use it yourself</button>
+        <button className="how cta" onClick={openTry}>▸ try it live</button>
       </div>
+
+      {tryOpen && (
+        <div className="tryc">
+          <div className="tryc-head">
+            <span className="tryc-title">
+              Try it live <span>· the demo app</span>
+            </span>
+            <button className="tryc-x" onClick={() => setTryOpen(false)}>×</button>
+          </div>
+          <div className="tryc-modes">
+            <button
+              className={`tryc-mode${tryMode === "recall" ? " on" : ""}`}
+              onClick={() => { setTryMode("recall"); setTryResult(null); }}
+            >
+              recall
+            </button>
+            <button
+              className={`tryc-mode${tryMode === "check" ? " on" : ""}`}
+              onClick={() => { setTryMode("check"); setTryResult(null); }}
+            >
+              check
+            </button>
+          </div>
+          <p className="tryc-sub">
+            {tryMode === "recall"
+              ? "Ask what this codebase already knows."
+              : "Describe a change — memory stops it if it breaks a decision."}
+          </p>
+          <div className="tryc-input">
+            <input
+              value={tryInput}
+              onChange={(e) => setTryInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runTry()}
+              placeholder={tryMode === "recall" ? 'e.g. "payments"' : 'e.g. "call Stripe from the component"'}
+              spellCheck={false}
+            />
+            <button className="tryc-run" onClick={() => runTry()} disabled={tryLoading}>
+              {tryLoading ? "…" : "run"}
+            </button>
+          </div>
+          <div className="tryc-chips">
+            {(tryMode === "recall"
+              ? ["payments", "auth", "how do we store money"]
+              : ["call Stripe from the checkout component", "store the price as a float", "put the token in localStorage"]
+            ).map((s) => (
+              <button key={s} className="tryc-chip" onClick={() => runTry(s)}>{s}</button>
+            ))}
+          </div>
+          {tryResult && (
+            <div className="tryc-out">
+              {tryResult.error ? (
+                <div className="tryc-empty">{tryResult.error}</div>
+              ) : tryResult.kind === "recall" ? (
+                (tryResult.memories || []).length ? (
+                  <ul className="tryc-list">
+                    {tryResult.memories.map((m) => (
+                      <li key={m.id}>
+                        <span className="tryc-dot" style={{ background: rgb(KIND_COLORS[m.kind] || KIND_COLORS.fact) }} />
+                        <span>
+                          <b>{m.summary}</b>
+                          <span className="tryc-kind">{m.kind}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="tryc-empty">nothing known about that yet</div>
+                )
+              ) : tryResult.status === "limited" ? (
+                <div className="tryc-empty">{tryResult.note}</div>
+              ) : (
+                <>
+                  <div className={`tryc-status ${tryResult.status}`}>
+                    {tryResult.status === "conflict"
+                      ? "⚠ conflict"
+                      : tryResult.status === "caution"
+                        ? "⚠ caution"
+                        : "✓ clear"}
+                  </div>
+                  {(tryResult.findings || []).map((f, i) => (
+                    <div className="tryc-finding" key={i}>
+                      <b>{f.summary}</b>
+                      {f.guidance && <div className="tryc-guide">→ {f.guidance}</div>}
+                    </div>
+                  ))}
+                  {tryResult.status === "clear" && (
+                    <div className="tryc-empty">nothing this conflicts with — good to go.</div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {ready && (
         <div className="search" title="Type a keyword to find a specific memory">
@@ -597,8 +733,15 @@ export default function App() {
             <h2>Use it yourself</h2>
             <p>
               Don't take our word for it — <b>feel it work</b> right now, against a live
-              sample codebase. No account, three commands.
+              sample codebase.
             </p>
+            <button
+              className="start-gh"
+              style={{ marginTop: 4 }}
+              onClick={() => { setShowStart(false); openTry(); }}
+            >
+              ▸ Try it right here in your browser — no install
+            </button>
             <h3>1 · Try it in 30 seconds <span className="start-badge">no account</span></h3>
             <p>Clone it, then ask the live demo what it already knows:</p>
             <div className="start-code">
