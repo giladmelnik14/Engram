@@ -65,7 +65,8 @@ src/             the constellation canvas (Vite + React, framework-free renderer
 ## Design decisions worth knowing
 
 - **One `InvokeLLM` call per memory.** `capture` classifies *and* discovers links in a single request, so capturing a memory costs one integration credit, not two.
-- **`recall` spends zero credits.** Ranking is plain code (term overlap × strength × confidence), so an agent can safely recall on every turn. Only an optional `--brief` synthesis costs a credit.
+- **`recall` spends zero credits.** Ranking is plain code (concept-aware term matching × strength × confidence), so an agent can safely recall on every turn. Only an optional `--brief` synthesis costs a credit.
+- **Recall matches by meaning, not just words.** A query for "billing" or "checkout" still surfaces the "route payments through /api/payments" decision — the payoff of semantic search, done with concept expansion in plain code so it stays free (vector embeddings would cost a call per recall and break that).
 - **Memory decays.** A nightly function decays unused memories toward archival; recall reinforces the useful ones. Without this, a memory layer just becomes an append-only pile of noise.
 - **The curator is honest about conflict.** `contradicts` links are surfaced, not hidden — when two memories disagree, a human should decide, and the canvas renders that edge in red.
 

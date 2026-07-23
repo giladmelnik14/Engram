@@ -23,22 +23,62 @@ function tokenize(text: string) {
     .filter((t) => t.length > 2 && !STOPWORDS.has(t));
 }
 
-function score(memory: any, terms: string[]) {
-  if (!terms.length) return memory.strength ?? 1;
+// Concept groups make recall match by *meaning*, not just the exact word — a
+// query for "billing" or "checkout" still surfaces the "route payments through
+// /api/payments" decision. This is the payoff of semantic search, done in plain
+// code at query time, so recall still spends zero integration credits.
+const CONCEPTS: string[][] = [
+  ["payment", "payments", "pay", "billing", "charge", "stripe", "checkout", "transaction", "purchase", "refund", "invoice", "money", "price", "amount", "cents", "currency"],
+  ["auth", "authentication", "authorize", "login", "signin", "signup", "session", "jwt", "token", "credential", "password", "oauth", "cookie"],
+  ["database", "db", "postgres", "postgresql", "sql", "persistence", "storage", "migration"],
+  ["cache", "caching", "redis", "memcached", "ttl"],
+  ["realtime", "websocket", "subscribe", "subscription", "stream", "streaming", "live", "socket"],
+  ["security", "secure", "xss", "csrf", "injection", "sanitize", "escape", "vulnerability"],
+  ["deploy", "deployment", "release", "ship", "rollout", "pipeline", "build", "flag"],
+  ["time", "timezone", "timestamp", "date", "utc", "datetime"],
+  ["ratelimit", "throttle", "throttling", "quota", "abuse", "bruteforce", "stuffing"],
+  ["error", "exception", "crash", "bug", "failure", "retry", "fallback"],
+  ["api", "endpoint", "route", "request", "response", "rest", "webhook"],
+];
+const RELATED: Record<string, string[]> = {};
+for (const group of CONCEPTS) {
+  for (const w of group) (RELATED[w] ??= []).push(...group.filter((x) => x !== w));
+}
 
+const singular = (w: string) => (w.length > 3 ? w.replace(/s$/, "") : w);
+
+// Expand raw query terms into weighted match terms: the term itself (and its
+// singular) at full weight, related concepts at half weight.
+function expand(terms: string[]): Array<[string, number]> {
+  const weight = new Map<string, number>();
+  const add = (t: string, w: number) => {
+    if (t.length > 2) weight.set(t, Math.max(weight.get(t) ?? 0, w));
+  };
+  for (const t of terms) {
+    add(t, 1);
+    add(singular(t), 1);
+    for (const rel of RELATED[t] ?? RELATED[singular(t)] ?? []) add(rel, 0.5);
+  }
+  return [...weight.entries()];
+}
+
+function score(memory: any, weighted: Array<[string, number]>) {
+  if (!weighted.length) return memory.strength ?? 1;
+
+  const tags = (memory.tags ?? []).map((t: string) => t.toLowerCase());
   const haystack = [
     memory.summary ?? "",
     memory.content ?? "",
     memory.scope ?? "",
-    (memory.tags ?? []).join(" "),
+    tags.join(" "),
   ]
     .join(" ")
     .toLowerCase();
 
   let hits = 0;
-  for (const term of terms) {
-    if ((memory.tags ?? []).some((t: string) => t.toLowerCase() === term)) hits += 3;
-    else if (haystack.includes(term)) hits += 1;
+  for (const [term, w] of weighted) {
+    if (tags.some((t: string) => t === term || singular(t) === term)) hits += 3 * w;
+    else if (haystack.includes(term)) hits += 1 * w;
   }
   if (!hits) return 0;
 
@@ -65,7 +105,7 @@ Deno.serve(async (req) => {
     const admin = base44.asServiceRole;
     const repo = await resolveRepo(admin, body.repo);
     const limit = Math.min(25, Math.max(1, Number(body.limit ?? 8)));
-    const terms = tokenize(body.query ?? "");
+    const terms = expand(tokenize(body.query ?? ""));
 
     const pool = await admin.entities.Memory.filter(
       { repo_id: repo.id, status: "active" },
