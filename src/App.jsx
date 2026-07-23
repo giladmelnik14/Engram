@@ -825,7 +825,6 @@ export default function App() {
         </div>
       )}
 
-      {showHint && <div className="hint">✦ hover any node · click a colour or search to filter</div>}
 
       {!ready && <div className="loading">gathering the constellation…</div>}
 
@@ -913,6 +912,7 @@ export default function App() {
         <div className="legend-key">
           <div className="legend-keyrow"><span className="legend-kdot" /> a memory the AI learned</div>
           <div className="legend-keyrow"><span className="legend-kline" /> a link between related ones</div>
+          <div className="legend-ktitle">hover a dot to read it</div>
           <div className="legend-ktitle">colour = the kind · click to filter</div>
         </div>
         {LEGEND.map(([k, label]) => (
