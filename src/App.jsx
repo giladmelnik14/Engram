@@ -92,8 +92,15 @@ export default function App() {
 
   const pushToast = (t) => {
     const id = `${t.kind}-${t.summary}-${performance.now()}`;
-    setToasts((prev) => [...prev, { ...t, id }].slice(-3));
-    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 5200);
+    let added = false;
+    setToasts((prev) => {
+      // Don't stack the same event twice (e.g. a click and the safety-poll both
+      // reporting one conflict) — one banner per distinct message at a time.
+      if (prev.some((p) => p.event === t.event && p.summary === t.summary)) return prev;
+      added = true;
+      return [...prev, { ...t, id }].slice(-3);
+    });
+    if (added) setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 5200);
   };
 
   const sync = () => {
