@@ -77,6 +77,7 @@ export default function App() {
   const [showHint, setShowHint] = useState(false);
   const [showClarity, setShowClarity] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
 
   const repo = repos.find((r) => r.id === repoId) || null;
 
@@ -636,10 +637,20 @@ export default function App() {
         </div>
       )}
 
+      {showMenu && <div className="menu-scrim" onClick={() => setShowMenu(false)} />}
       <div className="top-actions">
-        <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
-        <button className="how" onClick={() => setShowDiff(true)}>see the difference</button>
-        <button className="how" onClick={() => setShowStart(true)}>use it yourself</button>
+        <div className="menu-wrap">
+          <button className={`how menu-btn${showMenu ? " open" : ""}`} onClick={() => setShowMenu((v) => !v)}>
+            learn ▾
+          </button>
+          {showMenu && (
+            <div className="menu-drop">
+              <button onClick={() => { setShowMenu(false); setShowAbout(true); }}>How it works</button>
+              <button onClick={() => { setShowMenu(false); setShowDiff(true); }}>See the difference</button>
+              <button onClick={() => { setShowMenu(false); setShowStart(true); }}>Use it yourself</button>
+            </div>
+          )}
+        </div>
         <button className="how cta" onClick={openTry}>▸ try it live</button>
       </div>
 
@@ -817,24 +828,6 @@ export default function App() {
             Coding AIs forget between sessions — so they undo decisions and re-break things.
             This is the memory that keeps them from repeating the mistake.
           </div>
-        </div>
-      )}
-
-      {showGuide && ready && !showCinematic && !showClarity && !replaying && (
-        <div className="guide">
-          <span className="guide-text">
-            {repo?.name === "engram" ? (
-              <>
-                <b>Engram's own memory</b> — every dot is a decision it learned building itself.
-              </>
-            ) : (
-              <>
-                <b>A sample app's memory</b> — every dot is something its AI learned.
-              </>
-            )}
-          </span>
-          <button className="guide-try" onClick={openTry}>▸ try it live</button>
-          <button className="guide-x" onClick={() => setShowGuide(false)} aria-label="dismiss">×</button>
         </div>
       )}
 
