@@ -438,6 +438,15 @@ export default function App() {
               <li><b>A CLI</b> — <code>engram learn</code> / <code>engram recall</code> from your terminal.</li>
               <li><b>An MCP server</b> — so Claude Code and Cursor plug into the same memory.</li>
             </ul>
+            <div className="about-cta">
+              <span>See it stop a real mistake — <b>recall</b> + <b>check</b> against a live demo, no account, two lines.</span>
+              <button
+                className="about-try"
+                onClick={() => { setShowAbout(false); setShowStart(true); }}
+              >
+                Try it yourself →
+              </button>
+            </div>
             <p className="about-foot">
               Entities · Auth · RLS · Functions · Agents · Realtime · Integrations · Hosting —
               all Base44, one deploy.
