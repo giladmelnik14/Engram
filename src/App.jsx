@@ -207,10 +207,10 @@ export default function App() {
           if (!m.last_flagged_at || now - new Date(m.last_flagged_at).getTime() > 12000) continue;
           if (flashSeenRef.current.get(m.id) === m.last_flagged_at) continue;
           flashSeenRef.current.set(m.id, m.last_flagged_at);
+          // Flash the node red only — no top banner. The guardrail is shown by
+          // the console result in-page and the red pulse on the canvas; a
+          // separate banner just raced and stacked, so it's gone for good.
           engineRef.current?.flash(m.id);
-          // Only announce a banner for terminal-fired checks — when the in-page
-          // console is open it already shows the result, so stay quiet.
-          if (!tryOpenRef.current) pushToast({ event: "conflict", kind: m.kind, summary: m.summary });
         }
       } catch {
         /* transient */
