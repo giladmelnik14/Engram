@@ -90,6 +90,7 @@ export default function App() {
   const hintShownRef = useRef(false); // the "hover to explore" hint shows once
   const flashSeenRef = useRef(new Map()); // memory id -> last_flagged_at already pulsed
   const revealTimerRef = useRef(null); // the one-shot "build the constellation" timer
+  const tryOpenRef = useRef(false); // is the in-page console open (poll stays quiet if so)
 
   const pushToast = (t) => {
     const id = `${t.kind}-${t.summary}-${performance.now()}`;
@@ -206,7 +207,9 @@ export default function App() {
           if (flashSeenRef.current.get(m.id) === m.last_flagged_at) continue;
           flashSeenRef.current.set(m.id, m.last_flagged_at);
           engineRef.current?.flash(m.id);
-          pushToast({ event: "conflict", kind: m.kind, summary: m.summary });
+          // Only announce a banner for terminal-fired checks — when the in-page
+          // console is open it already shows the result, so stay quiet.
+          if (!tryOpenRef.current) pushToast({ event: "conflict", kind: m.kind, summary: m.summary });
         }
       } catch {
         /* transient */
@@ -440,10 +443,12 @@ export default function App() {
     const demo = repos.find((r) => r.name === "demo");
     if (demo && demo.id !== repoIdRef.current) selectRepo(demo.id);
     setTryResult(null);
+    tryOpenRef.current = true;
     setTryOpen(true);
   };
 
   const closeTry = () => {
+    tryOpenRef.current = false;
     setTryOpen(false);
     // Clear any conflict banners so closing the console leaves a clean canvas.
     setToasts((prev) => prev.filter((t) => t.event !== "conflict"));
