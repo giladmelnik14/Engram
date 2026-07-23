@@ -385,39 +385,38 @@ body,
 .clarity {
   position: fixed;
   z-index: 16;
-  top: 92px;
+  top: 40%;
   left: 50%;
-  transform: translateX(-50%);
-  width: min(620px, calc(100vw - 40px));
+  transform: translate(-50%, -50%);
+  width: min(680px, calc(100vw - 48px));
   text-align: center;
   pointer-events: none;
   animation: clarityLife 9.5s ease both;
 }
 .clarity-lead {
-  font-size: 19px;
+  font-size: 27px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: var(--ink);
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
-  line-height: 1.35;
+  text-shadow: 0 2px 40px rgba(0, 0, 0, 0.95), 0 0 80px rgba(0, 0, 0, 0.9);
+  line-height: 1.3;
 }
 .clarity-sub {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.55;
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.6;
   color: var(--muted);
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.95), 0 0 60px rgba(0, 0, 0, 0.9);
 }
 @keyframes clarityLife {
-  0%   { opacity: 0; transform: translate(-50%, 8px); filter: blur(6px); }
-  9%   { opacity: 1; transform: translate(-50%, 0);   filter: blur(0); }
-  85%  { opacity: 1; transform: translate(-50%, 0);   filter: blur(0); }
-  100% { opacity: 0; transform: translate(-50%, -6px); filter: blur(4px); }
+  0%   { opacity: 0; transform: translate(-50%, calc(-50% + 10px)); filter: blur(7px); }
+  9%   { opacity: 1; transform: translate(-50%, -50%);              filter: blur(0); }
+  82%  { opacity: 1; transform: translate(-50%, -50%);              filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 8px));  filter: blur(5px); }
 }
 @media (max-width: 640px) {
-  .clarity { top: 76px; }
-  .clarity-lead { font-size: 16px; }
-  .clarity-sub { font-size: 12.5px; }
+  .clarity-lead { font-size: 21px; }
+  .clarity-sub { font-size: 13.5px; }
 }
 
 /* ---- intro card ---- */
