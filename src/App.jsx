@@ -81,6 +81,7 @@ export default function App() {
   const skipRef = useRef(false);
   const startedRef = useRef(false); // replay begins once, after the intro
   const hintShownRef = useRef(false); // the "hover to explore" hint shows once
+  const flashSeenRef = useRef(new Map()); // memory id -> last_flagged_at already pulsed
 
   const pushToast = (t) => {
     const id = `${t.kind}-${t.summary}-${performance.now()}`;
@@ -132,6 +133,11 @@ export default function App() {
     store.current.links = new Map(links.map((l) => [l.id, l]));
     sync();
 
+    // Only react to conflict flags set from now on, not ones already on record.
+    for (const m of memories) {
+      if (m.last_flagged_at) flashSeenRef.current.set(m.id, m.last_flagged_at);
+    }
+
     const mine = (d) => d && d.repo_id === repoIdRef.current;
 
     const unsubMem = base44.entities.Memory.subscribe((ev) => {
@@ -171,7 +177,28 @@ export default function App() {
       }
       sync();
     });
-    unsubsRef.current = [unsubMem, unsubLink];
+    // Base44 realtime fires on create() but not update(), so `check`'s
+    // last_flagged_at never arrives over the stream. Poll the current repo for
+    // fresh flags and pulse them red — reads are public and cost no credits.
+    const flagPoll = setInterval(async () => {
+      const rid = repoIdRef.current;
+      if (!rid) return;
+      try {
+        const rows = await base44.entities.Memory.filter({ repo_id: rid }, "-updated_date", 120);
+        const now = Date.now();
+        for (const m of rows) {
+          if (!m.last_flagged_at || now - new Date(m.last_flagged_at).getTime() > 12000) continue;
+          if (flashSeenRef.current.get(m.id) === m.last_flagged_at) continue;
+          flashSeenRef.current.set(m.id, m.last_flagged_at);
+          engineRef.current?.flash(m.id);
+          pushToast({ event: "conflict", kind: m.kind, summary: m.summary });
+        }
+      } catch {
+        /* transient */
+      }
+    }, 1600);
+
+    unsubsRef.current = [unsubMem, unsubLink, () => clearInterval(flagPoll)];
 
     // Once the first constellation has settled, nudge the visitor to explore.
     if (!hintShownRef.current) {
