@@ -82,6 +82,30 @@ Deno.serve(async (req) => {
     }
     const trial = !caller;
 
+    // Credit guard for the open demo (v2). Each check is one InvokeLLM call, and the
+    // demo is a public URL — a shared link or a loop could otherwise burn the
+    // whole integration budget mid-judging. Cap trial checks per UTC day (the
+    // counter is a hidden Repo row, so no schema change and no credit cost).
+    // Authenticated callers on their own backend are never capped.
+    if (trial) {
+      const cap = Number(Deno.env.get("TRIAL_CHECK_DAILY_CAP") ?? "120");
+      const today = new Date().toISOString().slice(0, 10);
+      const [existing] = await admin.entities.Repo.filter({ name: "_trial_meter" }, null, 1);
+      const meter = existing ??
+        (await admin.entities.Repo.create({ name: "_trial_meter", description: today, memory_count: 0 }));
+      const used = meter.description === today ? (meter.memory_count ?? 0) : 0;
+      if (used >= cap) {
+        return Response.json({
+          status: "limited",
+          trial: true,
+          findings: [],
+          repo: repo.name,
+          note: "The public demo has hit its check limit for today. Deploy your own Engram (free, ~a minute) to keep checking your own code.",
+        });
+      }
+      await admin.entities.Repo.update(meter.id, { description: today, memory_count: used + 1 });
+    }
+
     const pool = await admin.entities.Memory.filter(
       { repo_id: repo.id, status: "active" },
       "-strength",

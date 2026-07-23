@@ -120,9 +120,13 @@ async function cmdCheck(action) {
   const cfg = await cfgOrTrial();
   const r = repo();
   process.stdout.write(C.dim("  checking against what this codebase knows…"));
-  const { status, findings, trial } = await check(cfg, { action, repo: r });
+  const { status, findings, trial, note } = await check(cfg, { action, repo: r });
   process.stdout.write("\r\x1b[K");
 
+  if (status === "limited") {
+    console.log(`${C.orange("· demo limit reached")} ${C.dim("— " + (note || "try again tomorrow, or deploy your own."))}\n`);
+    process.exit(0);
+  }
   if (status === "clear") {
     console.log(`${C.green("✓ clear")} ${C.dim("— nothing this conflicts with in " + r)}`);
     process.exit(0);
