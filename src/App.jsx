@@ -465,7 +465,7 @@ export default function App() {
     try {
       if (tryMode === "recall") {
         const { data } = await base44.functions.invoke("recall", { query: q, repo: "demo", limit: 6 });
-        setTryResult({ kind: "recall", ...data });
+        setTryResult({ kind: "recall", query: q, ...data });
       } else {
         const { data } = await base44.functions.invoke("check", { action: q, repo: "demo" });
         setTryResult({ kind: "check", ...data });
@@ -663,24 +663,30 @@ export default function App() {
             </span>
             <button className="tryc-x" onClick={closeTry}>×</button>
           </div>
+          <p className="tryc-intro">
+            This is a sample web app's memory. Ask it something, or propose a change —
+            the same two things a coding AI does.
+          </p>
           <div className="tryc-modes">
             <button
               className={`tryc-mode${tryMode === "recall" ? " on" : ""}`}
               onClick={() => { setTryMode("recall"); setTryResult(null); }}
             >
-              recall
+              <b>recall</b>
+              <span>what does it know?</span>
             </button>
             <button
               className={`tryc-mode${tryMode === "check" ? " on" : ""}`}
               onClick={() => { setTryMode("check"); setTryResult(null); }}
             >
-              check
+              <b>check</b>
+              <span>is my change safe?</span>
             </button>
           </div>
           <p className="tryc-sub">
             {tryMode === "recall"
-              ? "Type a topic — get back what this app's AI already knows about it. (This is what an agent reads before writing code.)"
-              : "Describe a change you're about to make — if it breaks a past decision, memory flags it and the matching dot flashes red."}
+              ? "Type any topic. You get back the decisions this app already made about it — what a coding AI reads before it writes code."
+              : "Type any change you're about to make. If it would break a past decision, you get a warning and the fix — before a line of code is written."}
           </p>
           <div className="tryc-input">
             <input
@@ -708,40 +714,50 @@ export default function App() {
                 <div className="tryc-empty">{tryResult.error}</div>
               ) : tryResult.kind === "recall" ? (
                 (tryResult.memories || []).length ? (
-                  <ul className="tryc-list">
-                    {tryResult.memories.map((m) => (
-                      <li key={m.id}>
-                        <span className="tryc-dot" style={{ background: rgb(KIND_COLORS[m.kind] || KIND_COLORS.fact) }} />
-                        <span>
-                          <b>{m.summary}</b>
-                          <span className="tryc-kind">{m.kind}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <div className="tryc-lead">Here's what it already decided:</div>
+                    <ul className="tryc-list">
+                      {tryResult.memories.map((m) => (
+                        <li key={m.id}>
+                          <span className="tryc-dot" style={{ background: rgb(KIND_COLORS[m.kind] || KIND_COLORS.fact) }} />
+                          <span>
+                            <b>{m.summary}</b>
+                            <span className="tryc-kind">{m.kind}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 ) : (
-                  <div className="tryc-empty">nothing known about that yet</div>
+                  <div className="tryc-empty">
+                    This sample app never learned anything about <b>"{tryResult.query}"</b> — it's a
+                    small web app, so it only knows its own world: <b>payments</b>, <b>auth</b>,{" "}
+                    <b>how it stores money</b>, its <b>database</b>, and how it <b>deploys</b>. Try one of those.
+                  </div>
                 )
               ) : tryResult.status === "limited" ? (
                 <div className="tryc-empty">{tryResult.note}</div>
+              ) : tryResult.status === "clear" ? (
+                <>
+                  <div className="tryc-status clear">✓ Safe to do this</div>
+                  <div className="tryc-empty">Nothing here clashes with a decision the app already made.</div>
+                </>
               ) : (
                 <>
                   <div className={`tryc-status ${tryResult.status}`}>
+                    {tryResult.status === "conflict" ? "⚠ Not safe — this breaks a rule" : "⚠ Careful — this touches something risky"}
+                  </div>
+                  <div className="tryc-lead">
                     {tryResult.status === "conflict"
-                      ? "⚠ conflict"
-                      : tryResult.status === "caution"
-                        ? "⚠ caution"
-                        : "✓ clear"}
+                      ? "The app already decided the opposite:"
+                      : "Watch out for what the app already knows:"}
                   </div>
                   {(tryResult.findings || []).map((f, i) => (
                     <div className="tryc-finding" key={i}>
                       <b>{f.summary}</b>
-                      {f.guidance && <div className="tryc-guide">→ {f.guidance}</div>}
+                      {f.guidance && <div className="tryc-guide">→ do this instead: {f.guidance}</div>}
                     </div>
                   ))}
-                  {tryResult.status === "clear" && (
-                    <div className="tryc-empty">nothing this conflicts with — good to go.</div>
-                  )}
                 </>
               )}
             </div>

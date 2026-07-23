@@ -1036,14 +1036,18 @@ body,
   width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1;
 }
 .tryc-x:hover { background: rgba(255, 255, 255, 0.12); color: var(--ink); }
+.tryc-intro { font-size: 12.5px; line-height: 1.5; color: var(--muted); margin: 10px 0 0; }
 .tryc-modes { display: flex; gap: 6px; margin: 12px 0 8px; }
 .tryc-mode {
-  flex: 1; padding: 7px 0; border-radius: 9px; cursor: pointer;
+  flex: 1; padding: 8px 0; border-radius: 10px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
   border: 1px solid var(--line); background: transparent; color: var(--muted);
-  font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
-  transition: all 0.15s ease;
+  font-family: inherit; transition: all 0.15s ease;
 }
+.tryc-mode b { font-size: 13.5px; font-weight: 600; letter-spacing: 0.02em; }
+.tryc-mode span { font-size: 10.5px; opacity: 0.75; font-weight: 400; }
 .tryc-mode.on { background: rgba(255, 140, 59, 0.16); border-color: rgba(255, 140, 59, 0.5); color: #ffd7ad; }
+.tryc-lead { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .tryc-sub { font-size: 12.5px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
 .tryc-input { display: flex; gap: 6px; }
 .tryc-input input {
@@ -1080,7 +1084,8 @@ body,
 .tryc-finding { margin-bottom: 10px; font-size: 13px; line-height: 1.45; }
 .tryc-finding b { color: var(--ink); font-weight: 600; }
 .tryc-guide { color: #9ff0d4; margin-top: 3px; font-size: 12.5px; }
-.tryc-empty { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.tryc-empty { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.tryc-empty b { color: var(--ink); font-weight: 600; }
 @media (max-width: 560px) {
   .tryc { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; max-height: 60vh; }
 }
