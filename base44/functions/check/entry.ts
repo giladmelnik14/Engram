@@ -164,6 +164,18 @@ For every conflict or caution, cite the memory id, say why it clashes, and give 
     if (findings.some((f: any) => f.severity === "conflict")) status = "conflict";
     else if (findings.length) status = "caution";
 
+    // Make the guardrail visible: stamp each flagged memory so the live canvas
+    // pulses it red over realtime. Individual updates (not bulkUpdate) so the
+    // subscribe stream actually fires for each one.
+    if (findings.length) {
+      const now = new Date().toISOString();
+      await Promise.all(
+        findings.map((f: any) =>
+          admin.entities.Memory.update(f.memory_id, { last_flagged_at: now }).catch(() => {}),
+        ),
+      );
+    }
+
     return Response.json({ status, trial, findings, repo: repo.name });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });

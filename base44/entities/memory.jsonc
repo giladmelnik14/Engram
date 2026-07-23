@@ -71,6 +71,11 @@
       "format": "date-time",
       "description": "Last time an agent recalled this memory"
     },
+    "last_flagged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time `check` flagged this memory as a conflict — drives the live red pulse on the canvas"
+    },
     "status": {
       "type": "string",
       "enum": ["active", "superseded", "archived"],

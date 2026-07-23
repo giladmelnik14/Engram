@@ -314,6 +314,12 @@ body,
   animation: toastIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 .toast b { font-weight: 650; }
+.toast-alert {
+  border-color: rgba(255, 66, 88, 0.6);
+  background: rgba(34, 12, 16, 0.92);
+  box-shadow: 0 12px 40px rgba(255, 40, 60, 0.22);
+}
+.toast-alert b { color: #ff8a9c; }
 .toast-dot {
   width: 10px;
   height: 10px;

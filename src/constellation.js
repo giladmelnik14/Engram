@@ -144,6 +144,7 @@ export class Constellation {
       bloom: born ? 1 : 0, // 1 = full bloom flash, decays to 0
       ringT: born ? 0 : 1, // 0→1 expanding ripple when a memory lands
       flare: 0, // recall pulse
+      flag: 0, // red alarm pulse when `check` flags this memory as a conflict
       lastRecall: m.recall_count ?? 0,
     };
   }
@@ -194,6 +195,16 @@ export class Constellation {
       return;
     }
     this.nodes.set(m.id, this._makeNode(m, true));
+  }
+
+  // Called when `check` flags a memory as a conflict — the node pulses red so
+  // the guardrail is visible on the canvas the instant it fires. Returns the
+  // node position so the UI can anchor a callout to it.
+  flash(id) {
+    const n = this.nodes.get(id);
+    if (!n) return null;
+    n.flag = 1;
+    return { x: n.x, y: n.y };
   }
 
   radius(n) {
@@ -295,6 +306,7 @@ export class Constellation {
       // animation decays — bloom lingers longer so each landing is a moment
       n.bloom *= 0.965;
       n.flare *= 0.92;
+      n.flag *= 0.975; // conflict alarm lingers ~2.5s so the eye catches it
       if (n.ringT < 1) n.ringT = Math.min(1, n.ringT + 0.016);
       // smooth hover-grow
       const hoverTarget = this.hover?.id === n.id ? 1 : 0;
@@ -492,6 +504,29 @@ export class Constellation {
       ctx.beginPath();
       ctx.arc(n.x, n.y, r * (1 + n.bloom * 0.6), 0, Math.PI * 2);
       ctx.stroke();
+
+      // Conflict flash — a red alarm the moment `check` flags this memory.
+      // Drawn on n.flag (not alpha) so it cuts through any dimming/filtering.
+      if (n.flag > 0.02) {
+        const RED = [255, 66, 88];
+        const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.34);
+        const f = n.flag;
+        // Red halo.
+        const rg = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR * 1.25);
+        rg.addColorStop(0, rgb(RED, f * (0.5 + pulse * 0.25)));
+        rg.addColorStop(0.35, rgb(RED, f * 0.2));
+        rg.addColorStop(1, rgb(RED, 0));
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, glowR * 1.25, 0, Math.PI * 2);
+        ctx.fill();
+        // Pulsing alarm ring.
+        ctx.strokeStyle = rgb(RED, f * (0.55 + pulse * 0.45));
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 7 + pulse * 11, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
       // Landing ripple — twin expanding rings the moment a memory is captured.
       if (n.ringT < 1) {

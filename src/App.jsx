@@ -136,6 +136,7 @@ export default function App() {
 
     const unsubMem = base44.entities.Memory.subscribe((ev) => {
       if (ev.type !== "delete" && !mine(ev.data)) return;
+      const prev = ev.type !== "delete" ? store.current.memories.get(ev.id) : null;
       if (ev.type === "delete") store.current.memories.delete(ev.id);
       else store.current.memories.set(ev.id, ev.data);
       if (ev.type === "create") {
@@ -146,6 +147,18 @@ export default function App() {
       }
       if (ev.type === "update" && ev.data.status === "superseded") {
         pushToast({ event: "retired", kind: ev.data.kind, summary: ev.data.summary });
+      }
+      // The guardrail, live: `check` just flagged this memory as a conflict, so
+      // pulse it red on the canvas. Fire only when last_flagged_at actually
+      // changed and is fresh, so a recall/reinforce update never triggers it.
+      if (
+        ev.type === "update" &&
+        ev.data.last_flagged_at &&
+        ev.data.last_flagged_at !== prev?.last_flagged_at &&
+        Date.now() - new Date(ev.data.last_flagged_at).getTime() < 10000
+      ) {
+        engineRef.current?.flash(ev.id);
+        pushToast({ event: "conflict", kind: ev.data.kind, summary: ev.data.summary });
       }
       sync();
     });
@@ -581,14 +594,23 @@ export default function App() {
 
       <div className="toast-wrap">
         {toasts.map((t) => {
-          const c = rgb(KIND_COLORS[t.kind] || KIND_COLORS.fact);
+          const isConflict = t.event === "conflict";
+          const c = rgb(isConflict ? [255, 66, 88] : KIND_COLORS[t.kind] || KIND_COLORS.fact);
           const verb =
             t.event === "learned" ? "learned" : t.event === "retired" ? "retired" : "flagged";
           return (
-            <div className="toast" key={t.id}>
+            <div className={`toast${isConflict ? " toast-alert" : ""}`} key={t.id}>
               <span className="toast-dot" style={{ background: c, boxShadow: `0 0 12px 2px ${c}` }} />
               <span>
-                agent <b>{verb}</b> — {t.summary}
+                {isConflict ? (
+                  <>
+                    <b>⚠ check blocked a conflict</b> — {t.summary}
+                  </>
+                ) : (
+                  <>
+                    agent <b>{verb}</b> — {t.summary}
+                  </>
+                )}
               </span>
             </div>
           );
