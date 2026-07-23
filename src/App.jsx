@@ -807,16 +807,16 @@ export default function App() {
         </div>
       )}
 
-      {showGuide && ready && !showCinematic && !showClarity && (
+      {showGuide && ready && !showCinematic && !showClarity && !replaying && (
         <div className="guide">
           <span className="guide-text">
             {repo?.name === "engram" ? (
               <>
-                <b>Engram's own memory</b> — each dot is a real decision it learned while being built.
+                <b>Engram's own memory</b> — every dot is a decision it learned building itself.
               </>
             ) : (
               <>
-                <b>A sample app's memory</b> — each dot is something its AI learned while coding, so it never forgets.
+                <b>A sample app's memory</b> — every dot is something its AI learned.
               </>
             )}
           </span>
