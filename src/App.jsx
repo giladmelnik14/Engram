@@ -66,6 +66,7 @@ export default function App() {
   const [storyStep, setStoryStep] = useState(0);
   const [showAbout, setShowAbout] = useState(false);
   const [showStart, setShowStart] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
   const [activeKind, setActiveKind] = useState(null);
   const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
@@ -506,8 +507,69 @@ export default function App() {
         </div>
       )}
 
+      {showDiff && (
+        <div className="about-scrim" onClick={() => setShowDiff(false)}>
+          <div className="about about-wide" onClick={(e) => e.stopPropagation()}>
+            <button className="about-x" onClick={() => setShowDiff(false)}>×</button>
+            <h2>The same task, with and without a memory</h2>
+            <p>
+              An AI coding agent is asked to <b>"add a Stripe checkout"</b> to a codebase that
+              already settled how payments work. Here's what happens each way.
+            </p>
+            <div className="diff">
+              <div className="diff-col diff-before">
+                <div className="diff-head">
+                  <span className="diff-tag bad">without Engram</span>
+                  <span className="diff-sub">no memory of past decisions</span>
+                </div>
+                <pre className="diff-term">
+{`> agent: adding checkout…
+
+  writes CheckoutButton.jsx
+  → calls stripe.charges.create()
+    directly from the component
+  → stores price as 19.99 (float)
+
+✗ undoes the "route via /api/payments"
+  decision from last month
+✗ reintroduces the rounding bug you
+  already fixed
+  ships anyway — nobody remembered`}
+                </pre>
+              </div>
+              <div className="diff-col diff-after">
+                <div className="diff-head">
+                  <span className="diff-tag good">with Engram</span>
+                  <span className="diff-sub">recalls + checks first</span>
+                </div>
+                <pre className="diff-term">
+{`> agent: adding checkout…
+
+  engram recall "payments"
+  → route via /api/payments
+  → money is integer cents
+
+  engram check "call Stripe from
+  the component"
+  ⚠ CONFLICT — route via /api/payments
+
+✓ calls the server endpoint instead
+✓ keeps amounts in cents
+  regression prevented`}
+                </pre>
+              </div>
+            </div>
+            <p className="about-foot">
+              Same agent, same prompt. The only difference is whether it could remember what the
+              codebase already knew — which is exactly what Engram gives it.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="top-actions">
         <button className="how" onClick={() => setShowAbout(true)}>how it works</button>
+        <button className="how" onClick={() => setShowDiff(true)}>see the difference</button>
         <button className="how cta" onClick={() => setShowStart(true)}>✦ use it yourself</button>
       </div>
 

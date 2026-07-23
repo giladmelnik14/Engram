@@ -296,6 +296,13 @@ export class Constellation {
       n.fx += (this.cx - n.x) * 0.004;
       n.fy += (this.cy - n.y) * 0.004;
 
+      // A flagged (conflicting) memory is drawn toward centre while it pulses,
+      // so the guardrail's target is never stuck at the edge of the frame.
+      if (n.flag > 0.05) {
+        n.fx += (this.cx - n.x) * 0.03 * n.flag;
+        n.fy += (this.cy - n.y) * 0.03 * n.flag;
+      }
+
       // Slightly higher damping → the constellation settles calmer and drifts
       // less, so it's easy to read.
       n.vx = (n.vx + n.fx) * 0.81;
