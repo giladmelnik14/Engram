@@ -76,6 +76,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [showClarity, setShowClarity] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
 
   const repo = repos.find((r) => r.id === repoId) || null;
 
@@ -653,8 +654,8 @@ export default function App() {
           </div>
           <p className="tryc-sub">
             {tryMode === "recall"
-              ? "Ask what this codebase already knows."
-              : "Describe a change — memory stops it if it breaks a decision."}
+              ? "Type a topic — get back what this app's AI already knows about it. (This is what an agent reads before writing code.)"
+              : "Describe a change you're about to make — if it breaks a past decision, memory flags it and the matching dot flashes red."}
           </p>
           <div className="tryc-input">
             <input
@@ -806,6 +807,24 @@ export default function App() {
         </div>
       )}
 
+      {showGuide && ready && !showCinematic && !showClarity && (
+        <div className="guide">
+          <span className="guide-text">
+            {repo?.name === "engram" ? (
+              <>
+                <b>Engram's own memory</b> — each dot is a real decision it learned while being built.
+              </>
+            ) : (
+              <>
+                <b>A sample app's memory</b> — each dot is something its AI learned while coding, so it never forgets.
+              </>
+            )}
+          </span>
+          <button className="guide-try" onClick={openTry}>▸ try it live</button>
+          <button className="guide-x" onClick={() => setShowGuide(false)} aria-label="dismiss">×</button>
+        </div>
+      )}
+
       {showHint && <div className="hint">✦ hover any node · click a colour or search to filter</div>}
 
       {!ready && <div className="loading">gathering the constellation…</div>}
@@ -891,6 +910,11 @@ export default function App() {
       </div>
 
       <div className="hud legend">
+        <div className="legend-key">
+          <div className="legend-keyrow"><span className="legend-kdot" /> a memory the AI learned</div>
+          <div className="legend-keyrow"><span className="legend-kline" /> a link between related ones</div>
+          <div className="legend-ktitle">colour = the kind · click to filter</div>
+        </div>
         {LEGEND.map(([k, label]) => (
           <button
             key={k}
