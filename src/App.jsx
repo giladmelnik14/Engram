@@ -443,6 +443,12 @@ export default function App() {
     setTryOpen(true);
   };
 
+  const closeTry = () => {
+    setTryOpen(false);
+    // Clear any conflict banners so closing the console leaves a clean canvas.
+    setToasts((prev) => prev.filter((t) => t.event !== "conflict"));
+  };
+
   const runTry = async (text) => {
     const q = (text ?? tryInput).trim();
     if (!q || tryLoading) return;
@@ -456,12 +462,12 @@ export default function App() {
       } else {
         const { data } = await base44.functions.invoke("check", { action: q, repo: "demo" });
         setTryResult({ kind: "check", ...data });
+        // The console already shows the result and the dot flashes red on the
+        // canvas — no top banner here (that's only for terminal-fired checks the
+        // poll picks up). Mark the flags as seen so the poll stays quiet too.
         for (const f of data.findings || []) {
           engineRef.current?.flash(f.memory_id);
-          if (data.flagged_at) flashSeenRef.current.set(f.memory_id, data.flagged_at); // dedupe the poll
-        }
-        if ((data.findings || []).length) {
-          pushToast({ event: "conflict", kind: data.findings[0].kind, summary: data.findings[0].summary });
+          if (data.flagged_at) flashSeenRef.current.set(f.memory_id, data.flagged_at);
         }
       }
     } catch (e) {
@@ -636,7 +642,7 @@ export default function App() {
             <span className="tryc-title">
               Try it live <span>· the demo app</span>
             </span>
-            <button className="tryc-x" onClick={() => setTryOpen(false)}>×</button>
+            <button className="tryc-x" onClick={closeTry}>×</button>
           </div>
           <div className="tryc-modes">
             <button
