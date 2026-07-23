@@ -88,6 +88,7 @@ export default function App() {
   const startedRef = useRef(false); // replay begins once, after the intro
   const hintShownRef = useRef(false); // the "hover to explore" hint shows once
   const flashSeenRef = useRef(new Map()); // memory id -> last_flagged_at already pulsed
+  const revealTimerRef = useRef(null); // the one-shot "build the constellation" timer
 
   const pushToast = (t) => {
     const id = `${t.kind}-${t.summary}-${performance.now()}`;
@@ -284,6 +285,12 @@ export default function App() {
   // Manual repo switch — snap straight to live (no full replay) for a quick feel.
   const selectRepo = (id) => {
     if (id === repoIdRef.current) return;
+    // Cancel a still-pending initial reveal so it can't replay over this switch.
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+    setShowClarity(false);
     skipRef.current = true;
     unsubsRef.current.forEach((u) => u());
     unsubsRef.current = [];
@@ -466,7 +473,7 @@ export default function App() {
     engineRef.current?.clear();
     setToasts([]);
     setShowClarity(true);
-    setTimeout(() => {
+    revealTimerRef.current = setTimeout(() => {
       setShowClarity(false);
       runReplay();
     }, 5000);
