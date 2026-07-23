@@ -1,12 +1,9 @@
 {
-  "//": "Drop this into your project as .mcp.json (Claude Code) or the equivalent MCP settings block in Cursor / Windsurf / Zed. Run `engram login` once first so the device key exists. Replace the path with wherever you cloned Engram.",
+  "//": "Drop this into your project as .mcp.json (Claude Code) or the equivalent MCP settings block in Cursor / Windsurf / Zed. Run `engram login` once first so the device key exists. Replace the path with wherever you cloned Engram. Engram auto-detects the repo from the current git remote, so none needs to be named here; set ENGRAM_REPO only to pin a specific one (e.g. \"demo\" to try it against the live sample).",
   "mcpServers": {
     "engram": {
       "command": "node",
-      "args": ["/absolute/path/to/engram/bin/engram-mcp.mjs"],
-      "env": {
-        "ENGRAM_REPO": "acme/checkout"
-      }
+      "args": ["/absolute/path/to/engram/bin/engram-mcp.mjs"]
     }
   }
 }

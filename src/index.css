@@ -382,6 +382,44 @@ body,
 }
 .hint::first-letter { color: var(--orange); }
 
+.clarity {
+  position: fixed;
+  z-index: 16;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 40px));
+  text-align: center;
+  pointer-events: none;
+  animation: clarityLife 9.5s ease both;
+}
+.clarity-lead {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
+  line-height: 1.35;
+}
+.clarity-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
+}
+@keyframes clarityLife {
+  0%   { opacity: 0; transform: translate(-50%, 8px); filter: blur(6px); }
+  9%   { opacity: 1; transform: translate(-50%, 0);   filter: blur(0); }
+  85%  { opacity: 1; transform: translate(-50%, 0);   filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); filter: blur(4px); }
+}
+@media (max-width: 640px) {
+  .clarity { top: 76px; }
+  .clarity-lead { font-size: 16px; }
+  .clarity-sub { font-size: 12.5px; }
+}
+
 /* ---- intro card ---- */
 .intro {
   position: fixed;

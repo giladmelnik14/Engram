@@ -69,6 +69,7 @@ export default function App() {
   const [activeKind, setActiveKind] = useState(null);
   const [search, setSearch] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const [showClarity, setShowClarity] = useState(false);
 
   const repo = repos.find((r) => r.id === repoId) || null;
 
@@ -376,6 +377,10 @@ export default function App() {
     setShowCinematic(false);
     if (startedRef.current) return;
     startedRef.current = true;
+    // One plain-language line as the constellation appears, for anyone who
+    // isn't a developer — then it fades so it never gets in the way.
+    setShowClarity(true);
+    setTimeout(() => setShowClarity(false), 9500);
     runReplay();
   };
 
@@ -522,6 +527,16 @@ export default function App() {
               View the full code on GitHub →
             </a>
             <p className="about-foot">Built entirely on Base44 — one backend, three clients.</p>
+          </div>
+        </div>
+      )}
+
+      {showClarity && (
+        <div className="clarity">
+          <div className="clarity-lead">Every glowing dot is something an AI learned while building an app.</div>
+          <div className="clarity-sub">
+            Coding AIs forget between sessions — so they undo decisions and re-break things.
+            This is the memory that keeps them from repeating the mistake.
           </div>
         </div>
       )}
