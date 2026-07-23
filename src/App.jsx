@@ -377,11 +377,17 @@ export default function App() {
     setShowCinematic(false);
     if (startedRef.current) return;
     startedRef.current = true;
-    // One plain-language line as the constellation appears, for anyone who
-    // isn't a developer — then it fades so it never gets in the way.
+    // Guided hand-off. Hold on an empty sky with one plain-language line, so a
+    // first-time visitor knows what they're about to see — THEN build the
+    // constellation. Sequencing them means the caption never fights the node
+    // labels for the center of the screen (which read as text soup before).
+    engineRef.current?.clear();
+    setToasts([]);
     setShowClarity(true);
-    setTimeout(() => setShowClarity(false), 9500);
-    runReplay();
+    setTimeout(() => {
+      setShowClarity(false);
+      runReplay();
+    }, 5000);
   };
 
   return (
@@ -588,6 +594,13 @@ export default function App() {
           );
         })}
       </div>
+
+      {replaying && (
+        <div className="replay-cap">
+          <b>Replaying this project's memory.</b> Every dot is a lesson its AI learned while
+          coding — watch it rebuild, then it goes live.
+        </div>
+      )}
 
       {!showStory && (
         <button
