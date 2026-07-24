@@ -14,7 +14,7 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { loadConfig, detectRepo, capture, recall, check } from "../lib/engram.mjs";
+import { loadConfig, detectRepo, capture, captureDirect, recall, check } from "../lib/engram.mjs";
 
 // The client may set ENGRAM_REPO; otherwise we infer it from the git remote of
 // the directory the MCP client launched us in.
@@ -54,20 +54,34 @@ const TOOLS = [
   {
     name: "remember",
     description:
-      "Save a durable lesson this codebase should not forget: a decision made, a gotcha discovered, a convention to follow, an architectural constraint. It is curated (classified, tagged, and linked to related memories) automatically. Do NOT save transient state or task chatter — only knowledge a future agent would want.",
+      "Save a durable lesson this codebase should not forget: a decision made, a gotcha discovered, a convention to follow, an architectural constraint. YOU classify it yourself (kind, summary, tags) — that keeps the write free of LLM cost. Do NOT save transient state or task chatter — only knowledge a future agent would want.",
     inputSchema: {
       type: "object",
       properties: {
         content: {
           type: "string",
-          description: "The lesson, in one or two clear sentences",
+          description: "The full lesson, in one or two clear sentences",
+        },
+        summary: {
+          type: "string",
+          description: "A one-line distillation (max ~70 chars) — becomes the node label",
+        },
+        kind: {
+          type: "string",
+          enum: ["decision", "gotcha", "convention", "architecture", "preference", "fact"],
+          description: "What kind of lesson this is",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "2-4 lowercase topic tags, e.g. ['payments','stripe']",
         },
         scope: {
           type: "string",
           description: "Optional file path or subsystem it applies to, e.g. src/payments",
         },
       },
-      required: ["content"],
+      required: ["content", "summary", "kind"],
     },
   },
   {
@@ -118,6 +132,22 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "remember") {
+      // The calling model classified the lesson itself, so we write through the
+      // zero-credit direct path — no server-side LLM involved.
+      if (args.summary && args.kind) {
+        await captureDirect(cfg, {
+          content: args.content,
+          summary: args.summary,
+          kind: args.kind,
+          tags: args.tags,
+          repo: REPO,
+          agent: AGENT,
+        });
+        return {
+          content: [{ type: "text", text: `Remembered as [${args.kind}]: ${args.summary} (${REPO})` }],
+        };
+      }
+      // Fallback: server-side curation (costs one integration credit).
       const data = await capture(cfg, {
         content: args.content,
         repo: REPO,
@@ -125,16 +155,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         agent: AGENT,
         source: "mcp",
       });
-      const parts = [`Remembered as [${data.memory.kind}]: ${data.memory.summary}`];
-      if (data.links?.length) {
-        parts.push(
-          `Linked to ${data.links.length} existing memory(ies): ${data.links.map((l) => l.relation).join(", ")}.`,
-        );
-      }
-      if (data.superseded?.length) {
-        parts.push(`Retired ${data.superseded.length} outdated memory(ies) it replaced.`);
-      }
-      return { content: [{ type: "text", text: parts.join(" ") }] };
+      return {
+        content: [{ type: "text", text: `Remembered as [${data.memory.kind}]: ${data.memory.summary}` }],
+      };
     }
 
     if (name === "check") {

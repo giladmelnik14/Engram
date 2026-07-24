@@ -29,8 +29,8 @@ Deno.serve(async (req) => {
         kind: m.kind,
         tags: m.tags || [],
         repo_id: repo.id,
-        source: "cli",
-        author_agent: "claude-code",
+        source: String(body.source || "cli"),
+        author_agent: String(body.agent || "claude-code"),
         confidence: m.confidence ?? 0.7,
         strength: 1 + (m.confidence ?? 0.7),
         recall_count: 0,
@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    await admin.entities.Repo.update(repo.id, { memory_count: created.length });
+    await admin.entities.Repo.update(repo.id, {
+      memory_count: (repo.memory_count || 0) + created.length,
+    });
     return Response.json({ success: true, created: created.length, links: (body.links || []).length });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
