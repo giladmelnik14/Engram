@@ -7,7 +7,7 @@ import { createCanvas } from "@napi-rs/canvas";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-const W = 1280, H = 720, FPS = 24, DUR = 100; // seconds
+const W = 1280, H = 720, FPS = 24, DUR = 102; // seconds
 const OUT = process.argv[2] || "/tmp/engram-frames";
 mkdirSync(OUT, { recursive: true });
 
@@ -130,7 +130,7 @@ const NODES = [
 ];
 const LINKS = [ [1, 0], [2, 0], [4, 3], [5, 1], [7, 3] ];
 
-function constellation(t, born, { redPulse = 0, dim = 1, shift = 0 } = {}) {
+function constellation(t, born, { redPulse = 0, dim = 1, shift = 0, labels = true } = {}) {
   // gentle "alive" float
   const fx = (n, i) => n.x + shift + 4 * Math.sin(t * 0.8 + i * 1.7);
   const fy = (n, i) => n.y + 3 * Math.cos(t * 0.6 + i * 1.1);
@@ -183,7 +183,7 @@ function constellation(t, born, { redPulse = 0, dim = 1, shift = 0 } = {}) {
       x.strokeStyle = rgba(col, bloom * 0.28 * dim);
       x.beginPath(); x.arc(nx, ny, r + (1 - bloom) * 92, 0, 7); x.stroke();
     }
-    if (p > 0.5) {
+    if (labels && p > 0.5) {
       const la = clamp((p - 0.5) * 2, 0, 1) * 0.8 * dim;
       x.font = "400 14px Helvetica";
       x.textAlign = "center";
@@ -213,7 +213,7 @@ function constellation(t, born, { redPulse = 0, dim = 1, shift = 0 } = {}) {
 // ---------- the try-it panel ----------
 function panel(t, alpha, mode, typed, showRun, result) {
   const px = 60, py = 118, pw = 430;
-  const ph = result ? (result.type === "conflict" ? 420 : 400) : 300;
+  const ph = result ? (result.type === "conflict" ? 420 : result.type === "safe" ? 330 : 400) : 300;
   x.save();
   x.globalAlpha = alpha;
   x.fillStyle = "rgba(12,14,22,0.94)";
@@ -305,6 +305,24 @@ function panel(t, alpha, mode, typed, showRun, result) {
       x.font = "400 15px Helvetica";
       x.fillText("do this instead: call the server", px + 52, ry + 126);
       x.fillText("endpoint from the component.", px + 52, ry + 146);
+    } else if (result.type === "safe") {
+      // drawn green checkmark (the font has no ✓ glyph)
+      x.strokeStyle = "#7ff0d0";
+      x.lineWidth = 3.4;
+      x.lineCap = "round";
+      x.beginPath();
+      x.moveTo(px + 26, ry + 8);
+      x.lineTo(px + 33, ry + 15);
+      x.lineTo(px + 46, ry - 1);
+      x.stroke();
+      x.lineCap = "butt";
+      x.fillStyle = "#7ff0d0";
+      x.font = "700 19px Helvetica";
+      x.fillText("Safe to do this", px + 56, ry + 16);
+      x.fillStyle = "#8f9bb3";
+      x.font = "400 15px Helvetica";
+      x.fillText("Nothing here clashes with a decision", px + 24, ry + 46);
+      x.fillText("the app already made. Go ahead.", px + 24, ry + 66);
     } else {
       x.fillStyle = "#8f9bb3";
       x.font = "400 14px Helvetica";
@@ -332,12 +350,13 @@ function panel(t, alpha, mode, typed, showRun, result) {
 
 // ---------- timeline ----------
 const CHECK_TEXT = "call Stripe from the checkout component";
+const SAFE_TEXT = "add a loading spinner to the dashboard";
 
 function drawFrame(t) {
   // cinematic slow push-in during the opening act
   const zoom = t < 18 ? 1 + 0.045 * (t / 18) : 1;
-  // impact shake at the CONFLICT moment (t ≈ 53.6)
-  const impact = clamp(1 - Math.abs(t - 53.7) / 0.65, 0, 1);
+  // impact shake at the CONFLICT moment (t ≈ 53.4)
+  const impact = clamp(1 - Math.abs(t - 53.5) / 0.65, 0, 1);
   const shake = impact > 0 ? Math.sin(t * 90) * 7 * impact : 0;
 
   x.save();
@@ -393,58 +412,72 @@ function drawFrame(t) {
       caption("This is a real app's memory — every dot is something its AI learned while coding.", fade(lt, 12, 1, 1));
     else
       caption("Colour is the kind of lesson · threads connect related memories · it streams live.", fade(lt - 12, 12, 1, 1));
-  } else if (t < 72) {
+  } else if (t < 66) {
+    // check — the conflict (the climax)
     const lt = t - 47;
     const born = NODES.map(() => 1);
-    const typedN = clamp((lt - 1.2) / 3.4, 0, 1);
+    const typedN = clamp((lt - 1.2) / 3.2, 0, 1);
     const typed = CHECK_TEXT.slice(0, Math.floor(typedN * CHECK_TEXT.length));
-    const ran = lt > 5.4;
-    const result = lt > 6.7 ? { type: "conflict" } : null;
-    const red = result ? clamp((lt - 6.7) / 0.4, 0, 1) * fade(lt, 25, 0.4, 1.2) : 0;
+    const ran = lt > 5.2;
+    const result = lt > 6.4 ? { type: "conflict" } : null;
+    const red = result ? clamp((lt - 6.4) / 0.4, 0, 1) * clamp((17 - lt) / 2, 0, 1) : 0;
     constellation(t, born, { redPulse: red, dim: 0.85, shift: 120 });
-    panel(t, fade(lt, 25, 0.8, 1.2), "check", typed, ran, result);
-    if (result) redEdge(clamp(1 - (lt - 6.7) / 1.1, 0, 1) * 0.9);
-    if (lt > 2 && lt < 6.5)
-      caption("Now watch the guardrail. The agent is about to repeat an old mistake…", fade(lt - 2, 4.5, 0.6, 0.6));
-    if (lt > 8.2)
-      caption("Blocked — before a single line of code shipped. That's memory with teeth.", fade(lt - 8.2, 16.5, 0.8, 1));
-  } else if (t < 81) {
-    const lt = t - 72;
+    panel(t, clamp(lt / 0.8, 0, 1), "check", typed, ran, result);
+    if (result) redEdge(clamp(1 - (lt - 6.4) / 1.1, 0, 1) * 0.9);
+    if (lt > 2 && lt < 6.2)
+      caption("Now watch the guardrail. The agent is about to repeat an old mistake…", fade(lt - 2, 4.2, 0.6, 0.6));
+    if (lt > 8)
+      caption("Blocked — before a single line of code shipped. That's memory with teeth.", fade(lt - 8, 11, 0.8, 1));
+  } else if (t < 76) {
+    // check — the safe case (the guardrail stays out of the way)
+    const lt = t - 66;
+    const born = NODES.map(() => 1);
+    constellation(t, born, { dim: 0.85, shift: 120 });
+    const typedN = clamp((lt - 0.8) / 2.6, 0, 1);
+    const typed = SAFE_TEXT.slice(0, Math.floor(typedN * SAFE_TEXT.length));
+    const ran = lt > 4;
+    const result = lt > 5.2 ? { type: "safe" } : null;
+    panel(t, fade(lt, 10, 0.001, 1), "check", typed, ran, result);
+    if (lt > 6)
+      caption("And when a change is safe? It stays out of the way.", fade(lt - 6, 4, 0.6, 0.8));
+  } else if (t < 84) {
+    // recall
+    const lt = t - 76;
     const born = NODES.map(() => 1);
     constellation(t, born, { dim: 0.85, shift: 120 });
     const typedN = clamp((lt - 0.6) / 1.3, 0, 1);
     const typed = "payments".slice(0, Math.floor(typedN * 8));
-    const result = lt > 2.5 ? { type: "recall" } : null;
-    panel(t, fade(lt, 9, 0.6, 1), "recall", typed, lt > 2.1, result);
-    if (lt > 3.4)
-      caption("And recall — everything the codebase knows, before the agent writes a word.", fade(lt - 3.4, 5.6, 0.8, 0.8));
-  } else if (t < 90) {
-    const lt = t - 81;
+    const result = lt > 2.4 ? { type: "recall" } : null;
+    panel(t, fade(lt, 8, 0.6, 1), "recall", typed, lt > 2.1, result);
+    if (lt > 3.2)
+      caption("And recall — everything the codebase knows, before the agent writes a word.", fade(lt - 3.2, 4.8, 0.8, 0.8));
+  } else if (t < 92) {
+    // the Base44 statement — constellation glows quietly, labels off so the
+    // text owns the frame
+    const lt = t - 84;
     const born = NODES.map(() => 1);
-    constellation(t, born, { dim: 0.45, shift: 0 });
-    if (lt < 4.5) {
-      lines(["Built entirely on Base44.", "In a few days."], 46, H / 2 - 20, fade(lt, 4.5), { weight: 700 });
+    constellation(t, born, { dim: 0.3, shift: 0, labels: false });
+    if (lt < 4) {
+      lines(["Built entirely on Base44.", "In a few days."], 46, H / 2 - 20, fade(lt, 4), { weight: 700 });
     } else {
-      lines(["One backend — three clients.", "The live canvas · a CLI · an MCP server."], 38, H / 2 - 20, fade(lt - 4.5, 4.5));
+      lines(["One Base44 backend powers everything —", "the website, a terminal tool, and a plug-in for AI assistants."], 34, H / 2 - 20, fade(lt - 4, 4));
     }
   } else {
-    const lt = t - 90;
+    // closing card — brand only, no call-to-action
+    const lt = t - 92;
     const a = fade(lt, 10, 1, 2.5);
     x.fillStyle = rgba(ORANGE, a);
-    x.beginPath(); x.arc(W / 2 - 122, H / 2 - 64, 11, 0, 7); x.fill();
+    x.beginPath(); x.arc(W / 2 - 122, H / 2 - 44, 11, 0, 7); x.fill();
     x.textAlign = "center";
     x.fillStyle = `rgba(255,255,255,${a})`;
     x.font = "700 56px Helvetica";
-    x.fillText("Engram", W / 2 + 14, H / 2 - 46);
+    x.fillText("Engram", W / 2 + 14, H / 2 - 26);
     x.fillStyle = `rgba(200,210,228,${a})`;
     x.font = "400 24px Helvetica";
-    x.fillText("The memory layer for the agents that build your app", W / 2, H / 2 + 6);
-    x.fillStyle = rgba(ORANGE, a);
-    x.font = "600 27px Helvetica";
-    x.fillText("Try it live — engram-596b9d3d.base44.app", W / 2, H / 2 + 62);
+    x.fillText("The memory layer for the agents that build your app", W / 2, H / 2 + 26);
     x.fillStyle = `rgba(150,160,180,${a * 0.9})`;
     x.font = "400 19px Helvetica";
-    x.fillText("No account needed · Built on Base44 · Dev Build-Off 2026", W / 2, H / 2 + 106);
+    x.fillText("Built on Base44 · Dev Build-Off 2026", W / 2, H / 2 + 68);
     x.textAlign = "left";
   }
 
