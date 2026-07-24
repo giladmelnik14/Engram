@@ -14,7 +14,7 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { loadConfig, detectRepo, capture, captureDirect, recall, check } from "../lib/engram.mjs";
+import { loadConfig, detectRepo, capture, captureDirect, recall, check, revise } from "../lib/engram.mjs";
 
 // The client may set ENGRAM_REPO; otherwise we infer it from the git remote of
 // the directory the MCP client launched us in.
@@ -82,6 +82,39 @@ const TOOLS = [
         },
       },
       required: ["content", "summary", "kind"],
+    },
+  },
+  {
+    name: "revise",
+    description:
+      "Deliberately update the codebase's memory when a settled rule no longer applies (a regulation changed, a decision was reversed, an approach was replaced). Retires the old rule, and optionally records its replacement. Use this instead of `remember` when the new lesson CONTRADICTS an existing one — never leave two contradicting rules active. Confirm with the user before revising a settled decision.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "string",
+          description: "Words identifying the OLD rule to retire, e.g. 'route payments through /api/payments'",
+        },
+        replacement_content: {
+          type: "string",
+          description: "The new rule, one or two sentences. Omit to just retire the old rule.",
+        },
+        replacement_summary: {
+          type: "string",
+          description: "One-line distillation of the new rule (required with replacement_content)",
+        },
+        replacement_kind: {
+          type: "string",
+          enum: ["decision", "gotcha", "convention", "architecture", "preference", "fact"],
+          description: "Kind of the new rule (required with replacement_content)",
+        },
+        replacement_tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "2-4 lowercase topic tags for the new rule",
+        },
+      },
+      required: ["target"],
     },
   },
   {
@@ -160,6 +193,33 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       };
     }
 
+    if (name === "revise") {
+      const hasReplacement = args.replacement_content && args.replacement_summary && args.replacement_kind;
+      const data = await revise(cfg, {
+        repo: REPO,
+        targetQuery: args.target,
+        action: hasReplacement ? "revise" : "forget",
+        replacement: hasReplacement
+          ? {
+              content: args.replacement_content,
+              summary: args.replacement_summary,
+              kind: args.replacement_kind,
+              tags: args.replacement_tags,
+            }
+          : undefined,
+        agent: AGENT,
+      });
+      if (data.ambiguous) {
+        const list = data.candidates.map((c) => `- ${c.summary} [${c.kind}]`).join("\n");
+        return {
+          content: [{ type: "text", text: `More than one memory matches "${args.target}". Call revise again with more specific target words:\n${list}` }],
+        };
+      }
+      const parts = [`Retired: ${data.retired.summary}`];
+      if (data.replacement) parts.push(`Replaced by: ${data.replacement.summary}`);
+      return { content: [{ type: "text", text: parts.join(" · ") + ` (${REPO})` }] };
+    }
+
     if (name === "check") {
       const data = await check(cfg, { action: args.action, repo: REPO });
       if (data.status === "clear") {
@@ -167,10 +227,19 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       }
       const head = data.status === "conflict" ? "⚠ CONFLICT" : "⚠ CAUTION";
       const body = (data.findings || [])
-        .map((f) => `- [${f.severity}] ${f.summary}\n  why: ${f.reason}${f.guidance ? `\n  instead: ${f.guidance}` : ""}`)
+        .map((f) => {
+          let s = `- [${f.severity}] ${f.summary}\n  why: ${f.reason}${f.guidance ? `\n  instead: ${f.guidance}` : ""}`;
+          // The advisory: tell the user which way is better, in plain terms.
+          if (f.advice) {
+            s += f.prefer === "proposed"
+              ? `\n  RECOMMENDATION: the newly proposed approach is better. ${f.advice} If the user confirms this change is intentional, use the revise tool to update the rule.`
+              : `\n  RECOMMENDATION: stick with the settled rule. ${f.advice}`;
+          }
+          return s;
+        })
         .join("\n");
       const lead = data.status === "conflict"
-        ? "This would violate a decision this codebase already made. Stop and reconsider:"
+        ? "This contradicts a decision this codebase already made. Surface this to the user with the recommendation below:"
         : "This touches something the codebase already knows about:";
       return { content: [{ type: "text", text: `${head} — ${lead}\n${body}` }] };
     }

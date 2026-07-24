@@ -4,7 +4,7 @@
 // A plain Node CLI talking straight to the Base44 backend: no browser, no
 // Base44 frontend. Shares its core (auth, repo detection, backend calls) with
 // the MCP server in ../lib/engram.mjs.
-import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall, check, distill } from "../lib/engram.mjs";
+import { loadConfig, ensureConfig, makeClient, detectRepo, capture, recall, check, distill, revise } from "../lib/engram.mjs";
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -138,10 +138,54 @@ async function cmdCheck(action) {
     console.log(`${color("●")} ${C.bold(f.summary)}`);
     console.log(`  ${C.dim(f.reason)}`);
     if (f.guidance) console.log(`  ${C.green("→ " + f.guidance)}`);
+    // The advisory: which way is actually better — the settled rule or the new one.
+    if (f.advice) {
+      const verdict = f.prefer === "proposed"
+        ? C.orange("recommendation: the NEW approach is better")
+        : C.orange("recommendation: stick with the settled rule");
+      console.log(`  ${verdict}`);
+      console.log(`  ${C.dim(f.advice)}`);
+      if (f.prefer === "proposed") {
+        console.log(`  ${C.dim(`intentional? update the rule:`)} ${C.bold(`engram forget "${f.summary.slice(0, 40)}"`)} ${C.dim("then")} ${C.bold("engram learn")}`);
+      }
+    }
     console.log("");
   }
   if (trial) console.log(C.dim("  trial · deploy your own to run check against your codebase.\n"));
   process.exit(status === "conflict" ? 2 : 0);
+}
+
+// Deliberately retire a rule that no longer applies — "the regulation changed".
+// It fades on the canvas instead of vanishing, so history stays visible.
+async function cmdForget(query) {
+  if (!query) {
+    console.error('usage: engram forget "<what to retire>"');
+    process.exit(1);
+  }
+  const cfg = await cfgOrExit();
+  const r = repo();
+  const byId = process.argv.includes("--id");
+  const data = await revise(cfg, {
+    repo: r,
+    targetId: byId ? query : undefined,
+    targetQuery: byId ? undefined : query,
+    action: "forget",
+  });
+  if (data.ambiguous) {
+    console.log(C.orange("More than one memory matches — be more specific or use an id:"));
+    for (const c of data.candidates) {
+      console.log(`  ${C.dim(c.id)}  [${c.kind}] ${c.summary}`);
+    }
+    console.log(C.dim('\n  engram forget --id <id>'));
+    process.exit(1);
+  }
+  if (data.error) {
+    console.error(C.red(data.error));
+    process.exit(1);
+  }
+  console.log(`${C.green("✓")} retired: ${C.bold(data.retired.summary)} ${C.dim("· " + r)}`);
+  console.log(C.dim("  it fades on the canvas — capture the new rule with engram learn"));
+  process.exit(0);
 }
 
 // Auto-capture: distill durable memories from a session log (piped or passed).
@@ -199,6 +243,7 @@ switch (cmd) {
   case "learn": await cmdLearn(arg); break;
   case "recall": await cmdRecall(arg); break;
   case "check": await cmdCheck(arg); break;
+  case "forget": await cmdForget(arg); break;
   case "distill": await cmdDistill(arg); break;
   case "watch": await cmdWatch(); break;
   default:
@@ -207,6 +252,7 @@ switch (cmd) {
   ${C.bold("engram learn")} "<what you learned>"   capture a memory
   ${C.bold("engram recall")} "<topic>" [--brief]   what does this codebase know?
   ${C.bold("engram check")} "<what you'll do>"      ⚠ flag it if it breaks a known decision
+  ${C.bold("engram forget")} "<old rule>"           retire a rule that no longer applies
   ${C.bold("engram distill")}                       auto-capture memories from a piped session log
   ${C.bold("engram watch")}                        live tail of the constellation
   ${C.bold("engram login")}                        issue a device key

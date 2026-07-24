@@ -21,6 +21,7 @@ Engram is a shared, living memory for a codebase's AI agents.
 - **`recall`** — before an agent writes code, it asks what the codebase already knows about the topic. Returns the durable decisions, gotchas, conventions, and architecture notes that would cause a mistake if ignored.
 - **`learn` / `remember`** — after an agent learns something durable, it captures it. A server-side **curator agent** classifies it, tags it, and discovers how it relates to existing memories — including when a new decision *supersedes* or *contradicts* an old one.
 - **`check`** — the guardrail. An agent describes what it's *about* to do, and Engram checks it against every settled decision, returning **conflict / caution / clear**. It's the difference between memory that *remembers* and memory that *stops the regression before it ships* — e.g. "call Stripe directly from the component" → ⚠ conflict with the "route all payments through /api/payments" decision, with guidance on what to do instead.
+- **`revise` / `forget`** — the rest of the lifecycle. Rules change: a regulation is repealed, a decision is reversed, an approach is replaced. `engram forget "<old rule>"` deliberately retires a memory (it fades on the canvas instead of vanishing, so history stays visible), and the MCP `revise` tool retires the old rule and records its replacement in one move. And when `check` catches you contradicting yourself, it doesn't just block — it takes a position: *"the settled rule is better, stick with it"* or *"your new way is better — revise the rule if this is intentional."*
 - **`distill` (auto-capture)** — memory that captures *itself*. Pipe a session log to `engram distill` (or wire the included **Claude Code `SessionEnd` hook**) and it extracts only the durable lessons — decisions, gotchas, conventions — ignoring the chatter, and captures each through the curator. The jump from "a tool you remember to use" to "a layer that's just on."
 - **The constellation** — every memory is a glowing node; every relationship a thread of light. It streams live: capture a memory in your terminal and it blooms onto the canvas in under a second. Unused memories fade over time; recalled ones grow brighter, so the map always reflects what the team actually relies on.
 
@@ -61,6 +62,15 @@ lib/
   engram.mjs     shared core (auth, repo detection, backend calls) for CLI + MCP
 src/             the constellation canvas (Vite + React, framework-free renderer)
 ```
+
+## What about hundreds of rules?
+
+The obvious worry: a real platform accumulates tens or hundreds of decisions — does every check drown in them? No, by design:
+
+- **`check` never sends the whole rulebook to the LLM.** Candidates are ranked by relevance in plain code first, and only the ~12 most relevant memories reach the model. A codebase with 500 rules costs the same per check as one with 20.
+- **`recall` is pure code** (concept-aware ranking), so it stays fast and free at any size.
+- **Decay prunes the long tail.** Rules nobody recalls fade toward archival; rules agents rely on grow stronger. The active set self-curates.
+- **Contradictions can't silently pile up.** New rules that clash with old ones get a red `contradicts` thread for a human to resolve, `supersedes` retires the loser automatically, and deliberate changes go through `revise` — so there's always exactly one live answer to "what did we decide?"
 
 ## Design decisions worth knowing
 

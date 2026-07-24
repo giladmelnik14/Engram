@@ -755,6 +755,12 @@ export default function App() {
                     <div className="tryc-finding" key={i}>
                       <b>{f.summary}</b>
                       {f.guidance && <div className="tryc-guide">→ do this instead: {f.guidance}</div>}
+                      {f.advice && (
+                        <div className="tryc-advice">
+                          <b>{f.prefer === "proposed" ? "Its verdict: your new way is better." : "Its verdict: the settled rule is better."}</b>{" "}
+                          {f.advice}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </>

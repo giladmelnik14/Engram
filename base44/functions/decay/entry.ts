@@ -16,6 +16,14 @@ Deno.serve(async (req) => {
     const admin = base44.asServiceRole;
 
     const body = await req.json().catch(() => ({}));
+
+    // Maintenance is not a public endpoint: repeated unauthenticated calls
+    // could grind every memory down to the archive floor. Device-key only.
+    const expected = Deno.env.get("ENGRAM_CLI_KEY");
+    if (!expected || body.device_key !== expected) {
+      return Response.json({ error: "unauthorized" }, { status: 401 });
+    }
+
     const dryRun = Boolean(body.dry_run);
 
     const active = await admin.entities.Memory.list("-strength", 5000);

@@ -52,6 +52,15 @@ const SCHEMA = {
           severity: { type: "string", enum: ["conflict", "caution"] },
           reason: { type: "string", description: "why the action clashes with this memory" },
           guidance: { type: "string", description: "what to do instead" },
+          prefer: {
+            type: "string",
+            enum: ["existing", "proposed"],
+            description: "on a conflict: which approach is actually better — the settled rule or the newly proposed one",
+          },
+          advice: {
+            type: "string",
+            description: "one sentence advising the user: either 'stick with the settled rule because…' or 'the new approach is better because… — revise the rule if intentional'",
+          },
         },
         required: ["memory_id", "severity", "reason"],
       },
@@ -139,7 +148,9 @@ Would the proposed action violate, contradict, or undo any of these decisions?
 - "caution": it touches a known gotcha or risk but isn't a direct violation.
 - "clear": no problem.
 
-For every conflict or caution, cite the memory id, say why it clashes, and give one line of guidance on what to do instead. Use ONLY ids from the list above. Be strict about real conflicts and do not invent ones.`;
+For every conflict or caution, cite the memory id, say why it clashes, and give one line of guidance on what to do instead. Use ONLY ids from the list above. Be strict about real conflicts and do not invent ones.
+
+ADDITIONALLY, for every "conflict": act as a senior engineer and take a position. Compare the settled rule against the newly proposed approach on the merits and set "prefer" to "existing" or "proposed", with "advice" as one plain sentence. If the settled rule is better: advise sticking with it and say why. If the proposed approach is genuinely better (newer API, simpler, safer): say so, and advise revising the settled rule if the change is intentional. Do not sit on the fence.`;
 
     const result: any = await base44.integrations.Core.InvokeLLM({
       prompt,
@@ -154,6 +165,8 @@ For every conflict or caution, cite the memory id, say why it clashes, and give 
         severity: f.severity === "conflict" ? "conflict" : "caution",
         reason: f.reason ?? "",
         guidance: f.guidance ?? "",
+        prefer: f.prefer ?? null,
+        advice: f.advice ?? "",
         summary: byId[f.memory_id].summary,
         kind: byId[f.memory_id].kind,
         content: byId[f.memory_id].content,
