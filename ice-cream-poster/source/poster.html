@@ -124,11 +124,10 @@ function buildFront() {
   s += arch(240, 560, 290, 440, cone(240, 555, 185, [C.pist, C.blush]));
   s += arch(W - 240, 560, 290, 440, popsicle(W - 240, 555, 280, C.vanilla, C.blush));
   s += birds(170, 200, 16) + birds(W - 300, 190, 14);
-  s += `<image href="logo_t.png" x="${cx - 200}" y="52" width="400" height="276"/>`;
-  s += divider(cx, 350, 280);
-  s += `<text x="${cx}" y="445" text-anchor="middle" class="serif" font-style="italic" font-weight="500" font-size="98" fill="${C.terra}">Something Sweet</text>`;
-  s += `<text x="${cx}" y="495" text-anchor="middle" class="serif" font-weight="600" font-size="22" letter-spacing="7" fill="${C.olive}">ICE CREAM BY THE SEA · HELP YOURSELF</text>`;
-  s += `<text x="${cx}" y="545" text-anchor="middle" class="he" font-size="34" fill="${C.olive}" direction="rtl" unicode-bidi="embed">משהו מתוק לפני שחוזרים לרקוד</text>`;
+  s += `<image href="logo_t.png" x="${cx - 200}" y="72" width="400" height="276"/>`;
+  s += divider(cx, 372, 280);
+  s += `<text x="${cx}" y="470" text-anchor="middle" class="serif" font-style="italic" font-weight="500" font-size="98" fill="${C.terra}">Something Sweet</text>`;
+  s += `<text x="${cx}" y="525" text-anchor="middle" class="serif" font-weight="600" font-size="22" letter-spacing="7" fill="${C.olive}">ICE CREAM BY THE SEA · HELP YOURSELF</text>`;
   return s + frame();
 }
 
@@ -137,15 +136,14 @@ function buildSide() {
   let s = base(H - 88);
   s += arch(cx, 420, 300, 360, cone(cx, 415, 165, [C.blush, C.pist]));
   s += birds(70, 120, 13);
-  s += `<text x="${cx}" y="500" text-anchor="middle" class="serif" font-style="italic" font-weight="500" font-size="74" fill="${C.terra}">Stay Sweet</text>`;
-  s += `<text x="${cx}" y="536" text-anchor="middle" class="serif" font-weight="600" font-size="20" letter-spacing="8" fill="${C.olive}">JENNIE &amp; GILAD</text>`;
-  s += `<text x="${cx}" y="572" text-anchor="middle" class="he" font-size="28" fill="${C.olive}" direction="rtl" unicode-bidi="embed">תתפנקו</text>`;
+  s += `<text x="${cx}" y="515" text-anchor="middle" class="serif" font-style="italic" font-weight="500" font-size="74" fill="${C.terra}">Stay Sweet</text>`;
+  s += `<text x="${cx}" y="556" text-anchor="middle" class="serif" font-weight="600" font-size="20" letter-spacing="8" fill="${C.olive}">JENNIE &amp; GILAD</text>`;
   return s + frame();
 }
 
 document.getElementById('root').innerHTML =
   `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">${P === 'front' ? buildFront() : buildSide()}</svg>`;
-Promise.all([document.fonts.load('italic 500 90px Cormorant'), document.fonts.load('600 26px Cormorant'), document.fonts.load('36px "Frank Ruhl"', 'אבג')])
+Promise.all([document.fonts.load('italic 500 90px Cormorant'), document.fonts.load('600 26px Cormorant')])
   .then(() => document.fonts.ready).then(() => document.body.dataset.ready = '1');
 </script>
 </body></html>
