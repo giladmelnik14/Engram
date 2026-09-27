@@ -1,0 +1,225 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  @font-face{font-family:'Pacifico';src:url(pacifico.woff2) format('woff2');font-display:block}
+  @font-face{font-family:'Fredoka';src:url(fredoka-lat.woff2) format('woff2');font-weight:300 700;unicode-range:U+0000-00FF,U+2000-206F}
+  @font-face{font-family:'Fredoka';src:url(fredoka-he.woff2) format('woff2');font-weight:300 700;unicode-range:U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F}
+  html,body{margin:0;padding:0;background:#fff}
+  svg{display:block}
+  .script{font-family:'Pacifico',cursive}
+  .round{font-family:'Fredoka',sans-serif}
+</style></head>
+<body>
+<div id="root"></div>
+<script>
+// Units: 1 = 1 mm. Panel chosen via ?panel=front|side
+const P = new URLSearchParams(location.search).get('panel') || 'front';
+const W = P === 'front' ? 1500 : 600, H = 700;
+
+const C = {
+  cream:'#FFF6E1', sun:'#FFD24D', sun2:'#FFB938', peach:'#FFC9A8',
+  pink:'#F7A1B9', pinkD:'#E57C9B', mint:'#A9DEC6', mintD:'#7CC5A6',
+  choc:'#8A5A44', cone:'#E9B872', coneD:'#C98F4A', olive:'#5E6B1C', sage:'#B6B25E',
+  berry:'#E0475F', lemon:'#FFE88A', white:'#FFFFFF'
+};
+
+// deterministic random
+let seed = P === 'front' ? 7 : 21;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+function scoop(cx, cy, r, fill, shade) {
+  // round scoop with a wavy dripping skirt
+  let d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy} `;
+  const n = 5, step = (2 * r) / n;
+  for (let i = 0; i < n; i++) {
+    const x0 = cx + r - i * step, x1 = x0 - step;
+    const depth = (i % 2 ? 0.28 : 0.16) * r;
+    d += `Q ${(x0 + x1) / 2} ${cy + depth * 2} ${x1} ${cy} `;
+  }
+  d += 'Z';
+  return `<path d="${d}" fill="${fill}"/>
+    <path d="M ${cx - r * 0.55} ${cy - r * 0.55} A ${r * 0.8} ${r * 0.8} 0 0 1 ${cx + r * 0.1} ${cy - r * 0.85}"
+      stroke="${C.white}" stroke-opacity=".55" stroke-width="${r * 0.12}" fill="none" stroke-linecap="round"/>
+    <path d="M ${cx + r * 0.95} ${cy - r * 0.1} A ${r} ${r} 0 0 1 ${cx + r * 0.3} ${cy + r * 0.05}" stroke="${shade}" stroke-width="${r*0.1}" fill="none" stroke-linecap="round" opacity=".5"/>`;
+}
+
+function sprinklesOn(cx, cy, r, count) {
+  const cols = [C.berry, C.sun, C.mintD, C.white, '#7FB2E5'];
+  let s = '';
+  for (let i = 0; i < count; i++) {
+    const a = Math.PI + rnd() * Math.PI, rr = rnd() * r * 0.8;
+    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * 0.9;
+    s += `<rect x="${x}" y="${y}" width="${r * 0.2}" height="${r * 0.06}" rx="${r * 0.03}"
+      fill="${cols[i % cols.length]}" transform="rotate(${rnd() * 180} ${x} ${y})"/>`;
+  }
+  return s;
+}
+
+function cone(x, y, s, flavors, rot = 0) {
+  // x,y = tip of cone; s = scale (cone height)
+  const w = s * 0.62, top = y - s;
+  let g = `<g transform="rotate(${rot} ${x} ${y})">`;
+  g += `<path d="M ${x} ${y} L ${x - w / 2} ${top} L ${x + w / 2} ${top} Z" fill="${C.cone}" stroke="${C.coneD}" stroke-width="${s*0.02}" stroke-linejoin="round"/>`;
+  // waffle
+  g += `<clipPath id="cl${x}${y}"><path d="M ${x} ${y} L ${x - w / 2} ${top} L ${x + w / 2} ${top} Z"/></clipPath><g clip-path="url(#cl${x}${y})" stroke="${C.coneD}" stroke-width="${s*0.018}">`;
+  for (let i = -6; i <= 6; i++) {
+    const o = i * s * 0.13;
+    g += `<line x1="${x - w + o}" y1="${top}" x2="${x + o + w * 0.3}" y2="${y}"/>`;
+    g += `<line x1="${x + w - o}" y1="${top}" x2="${x - o - w * 0.3}" y2="${y}"/>`;
+  }
+  g += `</g>`;
+  let cy = top, r = w * 0.58;
+  flavors.forEach(([f, sh], i) => {
+    g += scoop(x + (i % 2 ? r * 0.08 : 0), cy + (i === 0 ? r * 0.05 : 0), r, f, sh);
+    if (i === flavors.length - 1) g += sprinklesOn(x, cy, r, 10);
+    cy -= r * 1.05;
+    r *= 0.93;
+  });
+  // cherry
+  g += `<path d="M ${x} ${cy + r*0.1} q ${r*0.15} ${-r*0.5} ${r*0.45} ${-r*0.6}" stroke="${C.olive}" stroke-width="${r*0.07}" fill="none" stroke-linecap="round"/>
+        <circle cx="${x}" cy="${cy + r * 0.2}" r="${r * 0.28}" fill="${C.berry}"/>
+        <circle cx="${x - r * 0.09}" cy="${cy + r * 0.11}" r="${r * 0.07}" fill="#fff" opacity=".7"/>`;
+  return g + '</g>';
+}
+
+function popsicle(x, y, h, fill, dip, rot = 0) {
+  // x,y = bottom of stick
+  const w = h * 0.42, bodyH = h * 0.72, top = y - h;
+  return `<g transform="rotate(${rot} ${x} ${y})">
+    <rect x="${x - w * 0.12}" y="${top + bodyH - 10}" width="${w * 0.24}" height="${h - bodyH + 10}" rx="${w*0.12}" fill="#E8C79A" stroke="#C9A06B" stroke-width="${h*0.01}"/>
+    <path d="M ${x - w/2} ${top + bodyH} V ${top + w/2} A ${w/2} ${w/2} 0 0 1 ${x + w/2} ${top + w/2} V ${top + bodyH} Z" fill="${fill}"/>
+    <path d="M ${x - w/2} ${top + w*0.62} V ${top + w/2} A ${w/2} ${w/2} 0 0 1 ${x + w/2} ${top + w/2} V ${top + w*0.62}
+             q ${-w*0.1} ${w*0.28} ${-w*0.2} 0 q ${-w*0.12} ${w*0.45} ${-w*0.25} 0 q ${-w*0.1} ${w*0.22} ${-w*0.2} 0 q ${-w*0.12} ${w*0.35} ${-w*0.35} 0 Z" fill="${dip}"/>
+    <rect x="${x - w*0.32}" y="${top + w*0.8}" width="${w*0.1}" height="${bodyH*0.45}" rx="${w*0.05}" fill="#fff" opacity=".45"/>
+    ${[0,1,2,3,4,5].map(i=>`<rect x="${x - w*0.3 + i*w*0.11}" y="${top + w*0.28 + (i%2)*w*0.12}" width="${w*0.1}" height="${w*0.035}" rx="${w*0.017}" fill="${[C.white,C.berry,C.sun,C.mint][i%4]}" transform="rotate(${i*37} ${x - w*0.3 + i*w*0.11} ${top + w*0.3})"/>`).join('')}
+  </g>`;
+}
+
+function heart(x, y, s, fill, rot = 0) {
+  return `<path transform="translate(${x} ${y}) rotate(${rot}) scale(${s / 20})"
+    d="M0 6 C -10 -4 -20 4 -10 12 L 0 20 L 10 12 C 20 4 10 -4 0 6 Z" fill="${fill}"/>`;
+}
+
+function sun(cx, cy, r, rays) {
+  let s = '';
+  for (let i = 0; i < rays; i++) {
+    const a0 = (i / rays) * Math.PI * 2, a1 = a0 + Math.PI / rays;
+    const R = r * 6;
+    s += `<path d="M ${cx} ${cy} L ${cx + Math.cos(a0) * R} ${cy + Math.sin(a0) * R} L ${cx + Math.cos(a1) * R} ${cy + Math.sin(a1) * R} Z" fill="${C.sun}" opacity=".28"/>`;
+  }
+  return s + `<circle cx="${cx}" cy="${cy}" r="${r * 1.25}" fill="${C.sun}" opacity=".45"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.sun}"/>`;
+}
+
+function awning(y0, scallops) {
+  const sw = W / scallops, h = 70;
+  let s = `<rect x="0" y="0" width="${W}" height="${y0}" fill="${C.pink}"/>`;
+  for (let i = 0; i < scallops; i++) {
+    const x = i * sw, col = i % 2 ? C.cream : C.pink;
+    s += `<path d="M ${x} 0 H ${x + sw} V ${y0} A ${sw/2} ${sw/2*0.9} 0 0 1 ${x} ${y0} Z" fill="${col}"/>`;
+  }
+  s += `<path d="M 0 ${y0} ${Array.from({length:scallops},(_,i)=>`A ${sw/2} ${sw/2*0.9} 0 0 0 ${(i+1)*sw} ${y0}`).join(' ')}" fill="none" stroke="${C.pinkD}" stroke-width="3"/>`;
+  return s;
+}
+
+function confetti(n, avoid) {
+  const cols = [C.pink, C.mintD, C.sun2, C.berry, '#8EC3EE', C.sage];
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * W, y = 120 + rnd() * (H - 150);
+    if (avoid.some(([ax, ay, ar]) => Math.hypot(x - ax, y - ay) < ar)) continue;
+    const c = cols[i % cols.length];
+    if (i % 5 === 0) s += `<circle cx="${x}" cy="${y}" r="${3 + rnd() * 4}" fill="${c}"/>`;
+    else s += `<rect x="${x}" y="${y}" width="${14 + rnd()*8}" height="5" rx="2.5" fill="${c}" transform="rotate(${rnd() * 180} ${x} ${y})"/>`;
+  }
+  return s;
+}
+
+function badge(cx, cy, r) {
+  // scalloped cream badge w/ dashed ring
+  const n = 28; let d = '';
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    d += i ? `A ${r * 0.12} ${r * 0.12} 0 0 1 ${x} ${y} ` : `M ${x} ${y} `;
+  }
+  return `<path d="${d}Z" fill="${C.white}" stroke="${C.pink}" stroke-width="6"/>
+    <circle cx="${cx}" cy="${cy}" r="${r * 0.9}" fill="${C.cream}"/>
+    <circle cx="${cx}" cy="${cy}" r="${r * 0.9}" fill="none" stroke="${C.sage}" stroke-width="3" stroke-dasharray="10 9"/>`;
+}
+
+function buildFront() {
+  const cx = W / 2, cy = 390;
+  let s = `<rect width="${W}" height="${H}" fill="${C.cream}"/>`;
+  s += `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1C9"/><stop offset=".65" stop-color="${C.cream}"/><stop offset="1" stop-color="#FFE3D6"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>`;
+  s += sun(cx, cy, 120, 22);
+  s += confetti(170, [[cx, cy, 300], [180, 470, 160], [W - 180, 470, 160], [cx-300, cy+10, 150], [cx+300, cy+10, 150], [cx, 150, 200]]);
+  // bottom mint wave
+  s += `<path d="M 0 ${H - 70} C 200 ${H - 120} 350 ${H - 30} 550 ${H - 75} S 900 ${H - 110} 1100 ${H - 65} S 1400 ${H - 40} ${W} ${H - 95} V ${H} H 0 Z" fill="${C.mint}"/>
+        <path d="M 0 ${H - 35} C 250 ${H - 70} 450 ${H - 10} 750 ${H - 45} S 1250 ${H - 60} ${W} ${H - 30} V ${H} H 0 Z" fill="${C.mintD}" opacity=".6"/>`;
+  s += awning(70, 20);
+
+  // left cluster
+  s += popsicle(90, 640, 260, C.pink, C.choc, -12);
+  s += cone(230, 650, 250, [[C.mint, C.mintD], [C.pink, C.pinkD], [C.lemon, C.sun2]], 4);
+  s += popsicle(345, 650, 200, C.lemon, C.pink, 14);
+  // right cluster
+  s += popsicle(W - 345, 650, 200, C.mint, C.choc, -14);
+  s += cone(W - 230, 650, 250, [[C.pink, C.pinkD], [C.choc, '#6B4231'], [C.mint, C.mintD]], -4);
+  s += popsicle(W - 90, 640, 260, C.peach, C.berry, 12);
+
+  // hearts
+  [[430, 180, 34, C.berry, -15], [1070, 170, 30, C.pinkD, 14], [470, 560, 22, C.pink, 10], [1030, 575, 24, C.berry, -8],
+   [120, 180, 26, C.pinkD, -10], [W - 120, 190, 28, C.berry, 12]].forEach(h => s += heart(...h));
+
+  // headline
+  s += `<text x="${cx}" y="165" text-anchor="middle" class="script" font-size="92" fill="${C.pinkD}" stroke="#fff" stroke-width="14" paint-order="stroke" stroke-linejoin="round">Love is Sweet</text>`;
+  // badge + logo
+  s += badge(cx, cy + 10, 190);
+  s += `<image href="logo_t.png" x="${cx - 180}" y="${cy + 10 - 124}" width="360" height="248"/>`;
+  // bottom ribbon
+  s += ribbon(cx, 625, 560, 'Grab a scoop & celebrate with us!');
+  // side captions
+  const L = cx - 300, R = cx + 300;
+  s += `<g transform="rotate(-7 ${L} ${cy})">
+    <text x="${L}" y="${cy - 10}" text-anchor="middle" class="round" font-weight="700" font-size="46" fill="${C.olive}" direction="rtl" unicode-bidi="embed">תתפנקו!</text>
+    <text x="${L}" y="${cy + 38}" text-anchor="middle" class="round" font-weight="600" font-size="32" fill="${C.pinkD}" direction="rtl" unicode-bidi="embed">האהבה מתוקה</text></g>`;
+  s += `<g transform="rotate(7 ${R} ${cy})">
+    <text x="${R}" y="${cy - 10}" text-anchor="middle" class="round" font-weight="700" font-size="44" fill="${C.olive}">Stay cool</text>
+    <text x="${R}" y="${cy + 38}" text-anchor="middle" class="round" font-weight="600" font-size="30" fill="${C.pinkD}">&amp; eat ice cream</text></g>`;
+  return s;
+}
+
+function ribbon(cx, cy, w, text) {
+  const h = 62, x0 = cx - w / 2, x1 = cx + w / 2;
+  return `<path d="M ${x0 - 50} ${cy - h/2 + 14} H ${x0 + 10} V ${cy + h/2 + 14} H ${x0 - 50} L ${x0 - 30} ${cy + 14} Z" fill="${C.pinkD}"/>
+    <path d="M ${x1 + 50} ${cy - h/2 + 14} H ${x1 - 10} V ${cy + h/2 + 14} H ${x1 + 50} L ${x1 + 30} ${cy + 14} Z" fill="${C.pinkD}"/>
+    <rect x="${x0}" y="${cy - h/2}" width="${w}" height="${h}" rx="8" fill="${C.pink}"/>
+    <text x="${cx}" y="${cy + 13}" text-anchor="middle" class="round" font-weight="700" font-size="36" fill="#fff">${text}</text>`;
+}
+
+function buildSide() {
+  const cx = W / 2;
+  let s = `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1C9"/><stop offset=".65" stop-color="${C.cream}"/><stop offset="1" stop-color="#FFE3D6"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>`;
+  s += sun(cx, 360, 110, 16);
+  s += confetti(80, [[cx, 380, 200]]);
+  s += `<path d="M 0 ${H - 70} C 150 ${H - 120} 300 ${H - 30} 450 ${H - 80} S 560 ${H - 90} ${W} ${H - 70} V ${H} H 0 Z" fill="${C.mint}"/>`;
+  s += awning(70, 8);
+  s += `<text x="${cx}" y="175" text-anchor="middle" class="script" font-size="76" fill="${C.pinkD}" stroke="#fff" stroke-width="12" paint-order="stroke" stroke-linejoin="round">Sweet Love</text>`;
+  s += popsicle(140, 610, 200, C.pink, C.choc, -14);
+  s += popsicle(W - 140, 610, 200, C.mint, C.pink, 14);
+  s += cone(cx, 600, 175, [[C.lemon, C.sun2], [C.mint, C.mintD], [C.pink, C.pinkD]]);
+  [[90, 230, 26, C.berry, -12], [W - 90, 240, 26, C.pinkD, 12]].forEach(h => s += heart(...h));
+  s += `<rect x="${cx - 135}" y="${H - 58}" width="270" height="44" rx="22" fill="${C.cream}"/>
+        <text x="${cx}" y="${H - 27}" text-anchor="middle" class="round" font-weight="700" font-size="26" fill="${C.olive}" letter-spacing="3">JENNIE &amp; GILAD</text>`;
+  return s;
+}
+
+document.getElementById('root').innerHTML =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">${P === 'front' ? buildFront() : buildSide()}</svg>`;
+Promise.all([document.fonts.load('92px Pacifico'),document.fonts.load('700 40px Fredoka','abc'),document.fonts.load('700 40px Fredoka','אבג')]).then(()=>document.fonts.ready).then(() => document.body.dataset.ready = '1');
+</script>
+</body></html>
